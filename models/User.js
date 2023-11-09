@@ -114,8 +114,4 @@ const UserSchema = new Schema(
     { toJSON: { virtuals: true }, versionKey: false }
 );
 
-UserSchema.virtual('name').get(function () {
-    return `${this.details.firstName} ${this.details.lastName}`;
-});
-
 module.exports = model('user', UserSchema);

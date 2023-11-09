@@ -1,92 +1,112 @@
 const express = require('express');
 const request = require('supertest');
 const userRouter = require('../routes/user_router');
-const authRouter = require('../routes/auth_router');
+const { invalidPatternError, notFoundError } = require('../controllers/helpers/error_handling');
 
 const app = express();
 
 app.use(express.urlencoded({ extended: false }));
 app.use('/users', userRouter);
-app.use('/auth', authRouter);
 
-const { userIDs } = require('./config/test_IDs');
+const { users } = require('./config/test_users');
 
-const users = userIDs.map((objectId) => objectId.valueOf());
+const userIDs = users.map((user) => user._id.valueOf());
 
 const STARTING_USER_COUNT = users.length;
 const NONEXISTANT_ID = '65269890203feea7cca8826b';
+const INVALID_OBJECT_ID = 'foobar';
 
-// describe('GET /users', () => {
-//     test(`In-memory database has ${users.length} test users loaded on test start`, (done) => {
-//         request(app)
-//             .get('/users')
-//             .expect('Content-Type', /json/)
-//             .expect((res) => {
-//                 if (res.body.users.length !== STARTING_USER_COUNT)
-//                     throw new Error('In-memory DB did not start with 4 users');
-//             })
-//             .expect(200, done);
-//     });
+describe('GET /users', () => {
+    test(`In-memory database has ${STARTING_USER_COUNT} test users loaded on test start`, async () => {
+        const res = await request(app).get('/users');
 
-//     it('Returns only _id and usernames when getting all users', (done) => {
-//         request(app)
-//             .get('/users')
-//             .expect('Content-Type', /json/)
-//             .expect(200)
-//             .expect((res) => {
-//                 const containsOnlyExpectedProperties = (user) => {
-//                     const properties = Object.getOwnPropertyNames(user);
-//                     const expectedProperties = ['_id', 'username'];
+        expect(res.status).toBe(200);
+        expect(res.body.users.length).toBe(STARTING_USER_COUNT);
+    });
 
-//                     return JSON.stringify(properties) === JSON.stringify(expectedProperties);
-//                 };
+    it('Returns only _id and full names when getting all users', async () => {
+        const containsOnlyExpectedProperties = (user) => {
+            const properties = Object.getOwnPropertyNames(user);
+            const expectedProperties = ['_id', 'name'];
 
-//                 if (!res.body.users.every(containsOnlyExpectedProperties)) {
-//                     throw new Error('Unexpected property/ies returned');
-//                 }
-//             })
-//             .end(done);
-//     });
+            return JSON.stringify(properties) === JSON.stringify(expectedProperties);
+        };
 
-//     it('Gets user0 from in-memory test database, omitting email and password information', () => {
-//         return request(app)
-//             .get(`/users/${users[0]}`)
-//             .set('Accept', 'application/json')
-//             .expect('Content-Type', /json/)
-//             .expect(200)
-//             .then((res) => {
-//                 expect(res.body).toEqual({
-//                     _id: users[0],
-//                     username: 'user0',
-//                     friends: [],
-//                 });
-//             });
-//     });
+        const res = await request(app).get('/users');
 
-//     it("Gets user1's friends list and populates it with user1Friend's username", () => {
-//         return request(app)
-//             .get(`/users/${users[1]}/friends`)
-//             .set('Accept', 'application/json')
-//             .expect('Content-Type', /json/)
-//             .expect(200)
-//             .then((res) => {
-//                 expect(res.body).toEqual([
-//                     {
-//                         user: { _id: users[3], username: 'user1Friend' },
-//                         status: 'accepted',
-//                     },
-//                 ]);
-//             });
-//     });
+        expect(res.status).toEqual(200);
+        expect(res.body.users.every(containsOnlyExpectedProperties)).toBe(true);
+    });
 
-//     it('Returns 404 when fetching non-existant user', (done) => {
-//         request(app).get('/users/65218a70437ced46f36858d9').expect(404, done);
-//     });
+    it(`Returns only users whose names match a provided search query`, async () => {
+        const res = await request(app).get('/users?search=2');
 
-//     it('Returns 400 when fetching with invalid ObjectID pattern', (done) => {
-//         request(app).get('/users/65218a70437ced46f36858dk').expect(400, done);
-//     });
-// });
+        expect(res.status).toBe(200);
+        expect(res.body.users.length).toBe(1);
+        expect(res.body.users[0].name).toBe(
+            `${users[2].details.firstName} ${users[2].details.lastName}`
+        );
+    });
+
+    it(`Returns only users whose names match a provided search query (case insensitive)`, async () => {
+        const res = await request(app).get('/users?search=last');
+
+        expect(res.status).toBe(200);
+        expect(res.body.users.length).toBe(STARTING_USER_COUNT);
+    });
+
+    it("Gets first user from in-memory test database, showing name and other details marked with 'visibility: everyone'", async () => {
+        const { details } = users[0];
+
+        const res = await request(app).get(`/users/${userIDs[0]}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({
+            _id: users[0]._id,
+            name: `${details.firstName} ${details.lastName}`,
+            DOB: details.DOB.value,
+            city: details.city.value,
+            country: details.country.value,
+            employment: details.employment.value,
+            education: details.education.value,
+        });
+    });
+
+    it("Gets fourth user from in-memory test database, showing only name (other details are set to 'visibility: hidden'", async () => {
+        const { details } = users[3];
+
+        const containsHiddenDetails = (resObj) => {
+            const resKeys = Object.keys(resObj);
+            const hiddenDetails = Object.keys(details).filter(
+                (key) => details[key].visibility === 'hidden'
+            );
+
+            return resKeys.some((key) => hiddenDetails.includes(key));
+        };
+
+        const res = await request(app).get(`/users/${userIDs[3]}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual(
+            expect.objectContaining({
+                name: `${details.firstName} ${details.lastName}`,
+            })
+        );
+        expect(containsHiddenDetails(res.body)).toBe(false);
+    });
+
+    it('Returns 404 when fetching non-existant user', async () => {
+        const res = await request(app).get(`/users/${NONEXISTANT_ID}`);
+        expect(res.status).toBe(404);
+        expect(res.body).toEqual(notFoundError);
+    });
+
+    it('Returns 400 when fetching with invalid ObjectID pattern', async () => {
+        const res = await request(app).get(`/users/${INVALID_OBJECT_ID}`);
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual(invalidPatternError(INVALID_OBJECT_ID));
+    });
+});
 
 // describe('POST /users', () => {
 //     it('Adds a fourth user to the test database if all form fields pass validation', () => {
