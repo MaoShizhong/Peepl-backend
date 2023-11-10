@@ -1,22 +1,25 @@
 const express = require('express');
 const request = require('supertest');
 const userRouter = require('../routes/user_router');
+const authRouter = require('../routes/auth_router');
 const { invalidPatternError, notFoundError } = require('../controllers/helpers/error_handling');
 
 const app = express();
 
 app.use(express.urlencoded({ extended: false }));
 app.use('/users', userRouter);
+app.use('/auth', authRouter);
 
 const { users } = require('./config/test_users');
+const { friendUsers } = require('./config/test_friends');
 
 const userIDs = users.map((user) => user._id.valueOf());
 
-const STARTING_USER_COUNT = users.length;
+const STARTING_USER_COUNT = users.length + friendUsers.length;
 const NONEXISTANT_ID = '65269890203feea7cca8826b';
 const INVALID_OBJECT_ID = 'foobar';
 
-describe('GET /users', () => {
+describe('Get user details/walls', () => {
     test(`In-memory database has ${STARTING_USER_COUNT} test users loaded on test start`, async () => {
         const res = await request(app).get('/users');
 
@@ -39,7 +42,7 @@ describe('GET /users', () => {
     });
 
     it(`Returns only users whose names match a provided search query`, async () => {
-        const res = await request(app).get('/users?search=2');
+        const res = await request(app).get('/users?search=rst2');
 
         expect(res.status).toBe(200);
         expect(res.body.users.length).toBe(1);
@@ -61,7 +64,9 @@ describe('GET /users', () => {
         const res = await request(app).get(`/users/${userIDs[0]}`);
 
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({
+        expect(res.body).not.toHaveProperty('_id');
+        expect(res.body).toHaveProperty('handle');
+        expect(res.body).toMatchObject({
             name: `${details.firstName} ${details.lastName}`,
             DOB: details.DOB.value,
             city: details.city.value,
@@ -71,7 +76,7 @@ describe('GET /users', () => {
         });
     });
 
-    it.only("Gets fourth user from in-memory test database, showing only name and handle (other details are set to 'visibility: hidden'; no _id)", async () => {
+    it("Gets fourth user from in-memory test database, showing only name and handle (other details are set to 'visibility: hidden'; no _id)", async () => {
         const { details } = users[3];
 
         const containsHiddenDetails = (resObj) => {
@@ -86,9 +91,16 @@ describe('GET /users', () => {
         const res = await request(app).get(`/users/${userIDs[3]}`);
 
         expect(res.status).toBe(200);
-        expect(res.body).toHaveProperty('handle');
-        expect(res.body).toHaveProperty('name', `${details.firstName} ${details.lastName}`);
+        expect(Object.getOwnPropertyNames(res.body)).toEqual(['handle', 'name']);
+        expect(res.body.name).toBe(`${details.firstName} ${details.lastName}`);
         expect(containsHiddenDetails(res.body)).toBe(false);
+    });
+
+    it("Gets a specified user's wall", async () => {
+        const wallRes = await request(app).get(`/users/${users[0]._id}/wall`);
+        expect(wallRes.status).toBe(200);
+        expect(wallRes.body).toHaveProperty('user', users[0]._id);
+        expect(wallRes.body.posts.length).toBe(2);
     });
 
     it('Returns 404 when fetching non-existant user', async () => {
@@ -104,251 +116,132 @@ describe('GET /users', () => {
     });
 });
 
-describe('POST /users', () => {
-    it.skip('Adds new user to the test database if all form fields pass validation', async () => {
-        return request(app)
-            .post('/auth/users')
-            .type('form')
-            .send({
-                email: 'user3@test.com',
-                password: 'asdfASDF3',
-                confirm: 'asdfASDF3',
-            })
-            .expect(201)
-            .then(() => {
-                request(app)
-                    .get('/users')
-                    .expect(200)
-                    .expect((res) => {
-                        if (res.body.users.length !== STARTING_USER_COUNT + 1) {
-                            throw new Error('User was not added');
-                        }
-                    })
-                    .then((response) => {
-                        expect(response.body.users.at(-1)).toMatchObject({
-                            username: 'user3',
-                        });
-                    });
-            });
+describe('Successful user creation', () => {
+    it('Adds new user and associated wall to the test database if all form fields pass validation', async () => {
+        const postRes = await request(app).post('/auth/users').type('form').send({
+            email: 'new@new.com',
+            password: 'newNEW1234',
+            confirm: 'newNEW1234',
+            firstName: 'NewFirst',
+            lastName: 'NewLast',
+            DOB: '1991-06-11',
+            city: 'Neuerlin',
+            country: 'Germany',
+        });
+        expect(postRes.status).toBe(201);
+
+        const getRes = await request(app).get('/users');
+        expect(getRes.status).toBe(200);
+        expect(getRes.body.users.length).toBe(STARTING_USER_COUNT + 1);
+
+        const newUser = getRes.body.users.at(-1);
+        expect(newUser).toHaveProperty('name', 'NewFirst NewLast');
+        expect(newUser).not.toHaveProperty('password');
+
+        const wallRes = await request(app).get(`/users/${newUser._id}/wall`);
+        expect(wallRes.status).toBe(200);
+        expect(wallRes.body).toHaveProperty('user', newUser._id);
+        expect(wallRes.body.posts.length).toBe(0);
     });
 
-    it.skip('Rejects new user submission if password does not match constraints', (done) => {
-        request(app)
-            .post('/auth/users')
-            .type('form')
-            .send({
-                username: 'user4',
-                email: 'user4@test.com',
-                password: 'password',
-                confirm: 'password',
-            })
-            .expect(400)
-            .then(() => {
-                request(app)
-                    .get('/users')
-                    .expect((res) => {
-                        if (res.body.users.length !== STARTING_USER_COUNT + 1) {
-                            throw new Error('User incorrectly added');
-                        }
-                    })
-                    .end(done);
-            });
-    });
+    it('Adds new user and associated wall to the test database even if optional form fields are missing', async () => {
+        const postRes = await request(app).post('/auth/users').type('form').send({
+            email: 'new2@new2.com',
+            password: 'newNEW12342',
+            confirm: 'newNEW12342',
+            firstName: 'New2First',
+            lastName: 'New2Last',
+            DOB: '1992-06-11',
+        });
+        expect(postRes.status).toBe(201);
 
-    it.skip('Rejects new user submission if password fields do not match', (done) => {
-        request(app)
-            .post('/auth/users')
-            .type('form')
-            .send({
-                username: 'user4',
-                email: 'user4@test.com',
-                password: 'asdfASDF4',
-                confirm: '4FDSAfdsa',
-            })
-            .expect(400)
-            .then(() => {
-                request(app)
-                    .get('/users')
-                    .expect((res) => {
-                        if (res.body.users.length !== STARTING_USER_COUNT + 1) {
-                            throw new Error('User incorrectly added');
-                        }
-                    })
-                    .end(done);
-            });
+        const getRes = await request(app).get('/users');
+        expect(getRes.status).toBe(200);
+        expect(getRes.body.users.length).toBe(STARTING_USER_COUNT + 2);
+
+        const newUser = getRes.body.users.at(-1);
+        expect(newUser).toHaveProperty('name', 'New2First New2Last');
+        expect(newUser).not.toHaveProperty('password');
+        expect(newUser).not.toHaveProperty('city');
+        expect(newUser).not.toHaveProperty('country');
+
+        const wallRes = await request(app).get(`/users/${newUser._id}/wall`);
+        expect(wallRes.status).toBe(200);
+        expect(wallRes.body).toHaveProperty('user', newUser._id);
+        expect(wallRes.body.posts.length).toBe(0);
     });
 });
 
-// describe('PUT /users', () => {
-//     it("Stores user2 as pending friend in user0's friends list upon friend request", async () => {
-//         const putRes = await request(app).put(
-//             `/users/${users[0]}/friends?action=add&userID=${users[2]}`
-//         );
-//         expect(putRes.status).toEqual(200);
+describe('Rejecting invalid user creation', () => {
+    afterEach(async () => {
+        const getRes = await request(app).get('/users');
+        expect(getRes.body.users.length).toBe(STARTING_USER_COUNT + 2);
+    });
 
-//         const getRes = await request(app).get(`/users/${users[0]}/friends`);
-//         expect(getRes.status).toEqual(200);
-//         expect(getRes.body).toEqual([
-//             { user: { _id: users[2], username: 'user2' }, status: 'requested' },
-//         ]);
-//     });
+    it('Rejects new user submission if the provided email is already in use', async () => {
+        const postRes = await request(app).post('/auth/users').type('form').send({
+            email: users[0].email,
+            password: 'newNEW12342',
+            confirm: 'newNEW12342',
+            firstName: 'NewExistingFirst',
+            lastName: 'NewExistingLast',
+            DOB: '1992-06-11',
+        });
+        expect(postRes.status).toBe(400);
+        expect(postRes.body).toEqual({
+            error: 'Email already in use.\nIf you have an existing account with this email tied to Github and wish to set a password, please log in and set this in your account settings.',
+        });
+    });
 
-//     it("Adds the incoming friend request to user2's friends list before accept", () => {
-//         return request(app)
-//             .get(`/users/${users[2]}/friends`)
-//             .expect(200)
-//             .then((res) => {
-//                 expect(res.body).toEqual([
-//                     {
-//                         user: { _id: users[0], username: 'user0' },
-//                         status: 'incoming',
-//                     },
-//                 ]);
-//             });
-//     });
+    it('Rejects new user submission if DOB results in an age younger than 13 years', async () => {
+        const postRes = await request(app).post('/auth/users').type('form').send({
+            email: 'tooYoung@tooYoung.com',
+            password: 'tooYOUNG13',
+            confirm: 'tooYOUNG13',
+            firstName: 'Too',
+            lastName: 'Young',
+            DOB: '2015-06-11',
+        });
+        expect(postRes.status).toBe(400);
+        expect(postRes.body).toEqual({
+            error: 'You must be at least 13 years old to sign up to Peepl.',
+        });
+    });
 
-//     it("Marks both user0 and user2's pending friend requests as accepted when user2 accepts", async () => {
-//         const putRes = await request(app).put(
-//             `/users/${users[2]}/friends?action=accept&userID=${users[0]}`
-//         );
-//         expect(putRes.status).toBe(200);
+    it('Rejects new user submission if required field is missing (lastName)', async () => {
+        const postRes = await request(app).post('/auth/users').type('form').send({
+            email: 'new3@new3.com',
+            password: 'passwordPASSWORD1234',
+            confirm: 'passwordPASSWORD1234',
+            firstName: 'New3First',
+        });
+        expect(postRes.status).toBe(400);
+        expect(postRes.body).toEqual({ error: 'Last name must be provided.' });
+    });
 
-//         const user0Res = await request(app).get(`/users/${users[0]}/friends`);
-//         expect(user0Res.status).toBe(200);
-//         expect(user0Res.body).toEqual([
-//             {
-//                 user: { _id: users[2], username: 'user2' },
-//                 status: 'accepted',
-//             },
-//         ]);
+    it('Rejects new user submission if password does not match constraints', async () => {
+        const postRes = await request(app).post('/auth/users').type('form').send({
+            email: 'new4@new4.com',
+            password: 'password',
+            confirm: 'password',
+            firstName: 'New4First',
+            lastName: 'New4Last',
+            DOB: '1992-06-11',
+        });
+        expect(postRes.status).toBe(400);
+        expect(postRes.body).toEqual({ error: 'Password must follow the listed requirements.' });
+    });
 
-//         const user2Res = await request(app).get(`/users/${users[2]}/friends`);
-//         expect(user2Res.status).toBe(200);
-//         expect(user2Res.body).toEqual([
-//             {
-//                 user: { _id: users[0], username: 'user0' },
-//                 status: 'accepted',
-//             },
-//         ]);
-//     });
-
-//     it('Adds requested friend to user1 and incoming friend request to user2 upon friend request', async () => {
-//         const putRes = await request(app).put(
-//             `/users/${users[1]}/friends?action=add&userID=${users[2]}`
-//         );
-//         expect(putRes.status).toEqual(200);
-
-//         const user1Res = await request(app).get(`/users/${users[1]}/friends`);
-//         expect(user1Res.status).toEqual(200);
-//         expect(user1Res.body).toEqual([
-//             {
-//                 user: { _id: users[3], username: 'user1Friend' },
-//                 status: 'accepted',
-//             },
-//             { user: { _id: users[2], username: 'user2' }, status: 'requested' },
-//         ]);
-
-//         const user2Res = await request(app).get(`/users/${users[2]}/friends`);
-//         expect(user2Res.status).toEqual(200);
-//         expect(user2Res.body).toEqual([
-//             { user: { _id: users[0], username: 'user0' }, status: 'accepted' },
-//             { user: { _id: users[1], username: 'user1' }, status: 'incoming' },
-//         ]);
-//     });
-
-//     it("Removes pending entry from both users' friends lists upon rejection", async () => {
-//         const putRes = await request(app).put(
-//             `/users/${users[2]}/friends?action=reject&userID=${users[1]}`
-//         );
-//         expect(putRes.status).toEqual(200);
-
-//         const user1Res = await request(app).get(`/users/${users[1]}/friends`);
-//         expect(user1Res.status).toEqual(200);
-//         expect(user1Res.body).toEqual([
-//             {
-//                 user: { _id: users[3], username: 'user1Friend' },
-//                 status: 'accepted',
-//             },
-//         ]);
-
-//         const user2Res = await request(app).get(`/users/${users[2]}/friends`);
-//         expect(user2Res.status).toEqual(200);
-//         expect(user2Res.body).toEqual([
-//             { user: { _id: users[0], username: 'user0' }, status: 'accepted' },
-//         ]);
-//     });
-
-//     it('Prevents attempting to add a non-existant user as a friend, returning a 404', async () => {
-//         const putRes = await request(app).put(
-//             `/users/${users[2]}/friends?action=add&userID=6521aac212fde41aa85be1a0`
-//         );
-//         expect(putRes.status).toEqual(404);
-
-//         const user2Res = await request(app).get(`/users/${users[2]}/friends`);
-//         expect(user2Res.status).toEqual(200);
-//         expect(user2Res.body).toEqual([
-//             { user: { _id: users[0], username: 'user0' }, status: 'accepted' },
-//         ]);
-//     });
-
-//     it('Prevents accepting a non-existant friend request, returning a 400', async () => {
-//         const putRes = await request(app).put(
-//             `/users/${users[2]}/friends?action=accept&userID=645eaae21267e41aa35ba2a2`
-//         );
-//         expect(putRes.status).toEqual(404);
-
-//         const user2Res = await request(app).get(`/users/${users[2]}/friends`);
-//         expect(user2Res.status).toEqual(200);
-//         expect(user2Res.body).toEqual([
-//             { user: { _id: users[0], username: 'user0' }, status: 'accepted' },
-//         ]);
-//     });
-// });
-
-// describe('DELETE /users', () => {
-//     it('Deletes user1Friend', async () => {
-//         const deleteRes = await request(app).delete(`/users/${users[3]}`);
-//         expect(deleteRes.status).toBe(200);
-
-//         const res = await request(app).get('/users');
-//         expect(res.status).toBe(200);
-//         expect(res.body.users.length).toBe(STARTING_USER_COUNT);
-//         expect(res.body.users.find((user) => user.username === 'user1Friend')).toBe(undefined);
-//     });
-
-//     it("Removes user1Friend from user1's friends list after deletion", () => {
-//         return request(app)
-//             .get(`/users/${users[1]}/friends`)
-//             .expect(200)
-//             .then((res) => {
-//                 expect(res.body).toEqual([]);
-//             });
-//     });
-
-//     it('Returns 404 upon an attempt to delete a non-existant user', (done) => {
-//         request(app).delete('/users/62218a22128de91a680ba11b').expect(404, done);
-//     });
-
-//     it('Returns 400 upon an attempt to delete an invalid ObjectId pattern query', (done) => {
-//         request(app).delete('/users/foobar').expect(400, done);
-//     });
-
-//     it('Removes user0 and user2 as friends when user2 deletes friendship status', async () => {
-//         const putRes = await request(app).delete(`/users/${users[2]}/friends?userID=${users[0]}`);
-//         expect(putRes.status).toEqual(200);
-
-//         const user0Res = await request(app).get(`/users/${users[0]}/friends`);
-//         expect(user0Res.status).toEqual(200);
-//         expect(user0Res.body).toEqual([]);
-
-//         const user2Res = await request(app).get(`/users/${users[2]}/friends`);
-//         expect(user2Res.status).toEqual(200);
-//         expect(user2Res.body).toEqual([]);
-//     });
-
-//     it('Returns 404 upon an attempt to remove a friend who is not a friend', (done) => {
-//         request(app)
-//             .delete(`/users/${users[2]}/friends?userID=62218a22128de91a680ba11b`)
-//             .expect(404, done);
-//     });
-// });
+    it('Rejects new user submission if password fields do not match', async () => {
+        const postRes = await request(app).post('/auth/users').type('form').send({
+            email: 'new5@new.com',
+            password: 'asdfASDF5',
+            confirm: '5FDSAfdsa',
+            firstName: 'New5First',
+            lastName: 'New5Last',
+            DOB: '1992-06-11',
+        });
+        expect(postRes.status).toBe(400);
+        expect(postRes.body).toEqual({ error: 'Passwords must match.' });
+    });
+});

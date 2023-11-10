@@ -5,6 +5,12 @@ module.exports = {
         '65218ac5dc04264ac8a44906',
         '65218ac5dc04264ac8a44918',
     ],
+    friendUserIDs: [
+        '65218a70437ced46f36858d9',
+        '65218ac212fde91aa80bd116',
+        '65218ac5dc04264ac8a44907',
+        '65218ac5dc04264ac8a44919',
+    ],
     postIDs: ['65218ac99fdd95b5505e56f9', '65218b1cdf64387e57489053', '65218b21d2fd466660b98522'],
     commentIDs: [
         '65218cd0a863d7b4539518eb',

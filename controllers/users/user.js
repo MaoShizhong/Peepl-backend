@@ -1,3 +1,3 @@
-const { getAllUsers, getSpecificUser } = require('./user_GET');
+const { getAllUsers, getSpecificUser, getWall } = require('./user_GET');
 
-module.exports = { getAllUsers, getSpecificUser };
+module.exports = { getAllUsers, getSpecificUser, getWall };

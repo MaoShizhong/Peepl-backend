@@ -79,6 +79,7 @@ const UserSchema = new Schema(
                 value: String,
                 visibility: {
                     type: String,
+                    default: 'hidden',
                     enum: ['everyone', 'friends', 'hidden'],
                 },
             },
@@ -86,6 +87,7 @@ const UserSchema = new Schema(
                 value: String,
                 visibility: {
                     type: String,
+                    default: 'hidden',
                     enum: ['everyone', 'friends', 'hidden'],
                 },
             },
@@ -93,6 +95,7 @@ const UserSchema = new Schema(
                 value: [EmploymentSchema],
                 visibility: {
                     type: String,
+                    default: 'everyone',
                     enum: ['everyone', 'friends', 'hidden'],
                 },
             },
@@ -100,6 +103,7 @@ const UserSchema = new Schema(
                 value: [EducationSchema],
                 visibility: {
                     type: String,
+                    default: 'everyone',
                     enum: ['everyone', 'friends', 'hidden'],
                 },
             },
