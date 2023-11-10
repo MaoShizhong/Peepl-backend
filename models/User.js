@@ -46,20 +46,20 @@ const TokenSchema = new Schema(
 
 const UserSchema = new Schema(
     {
-        handle: { type: String, required: true },
-        email: { type: String, required: true },
+        handle: { type: String, unique: true, required: true },
+        email: { type: String, unique: true, required: true },
         auth: {
             strategies: [{ type: String, enum: ['local', 'github'] }],
             password: {
                 type: String,
                 required: function () {
-                    return this.strategies.includes('local');
+                    return this.auth.strategies.includes('local');
                 },
             },
             githubID: {
                 type: String,
                 required: function () {
-                    return this.strategies.includes('github');
+                    return this.auth.strategies.includes('github');
                 },
             },
         },
@@ -68,26 +68,25 @@ const UserSchema = new Schema(
             lastName: { type: String, required: true },
             DOB: {
                 value: { type: Date, required: true },
-                visiblity: {
+                visibility: {
                     type: String,
+                    default: 'hidden',
                     enum: ['everyone', 'friends', 'hidden'],
                     required: true,
                 },
             },
             city: {
-                value: { type: Date, required: true },
-                visiblity: {
+                value: String,
+                visibility: {
                     type: String,
                     enum: ['everyone', 'friends', 'hidden'],
-                    required: true,
                 },
             },
             country: {
-                value: { type: Date, required: true },
-                visiblity: {
+                value: String,
+                visibility: {
                     type: String,
                     enum: ['everyone', 'friends', 'hidden'],
-                    required: true,
                 },
             },
             employment: {
@@ -95,7 +94,6 @@ const UserSchema = new Schema(
                 visibility: {
                     type: String,
                     enum: ['everyone', 'friends', 'hidden'],
-                    required: true,
                 },
             },
             education: {
@@ -103,7 +101,6 @@ const UserSchema = new Schema(
                 visibility: {
                     type: String,
                     enum: ['everyone', 'friends', 'hidden'],
-                    required: true,
                 },
             },
         },

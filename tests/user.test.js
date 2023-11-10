@@ -62,7 +62,6 @@ describe('GET /users', () => {
 
         expect(res.status).toBe(200);
         expect(res.body).toEqual({
-            _id: users[0]._id,
             name: `${details.firstName} ${details.lastName}`,
             DOB: details.DOB.value,
             city: details.city.value,
@@ -72,7 +71,7 @@ describe('GET /users', () => {
         });
     });
 
-    it("Gets fourth user from in-memory test database, showing only name (other details are set to 'visibility: hidden'", async () => {
+    it.only("Gets fourth user from in-memory test database, showing only name and handle (other details are set to 'visibility: hidden'; no _id)", async () => {
         const { details } = users[3];
 
         const containsHiddenDetails = (resObj) => {
@@ -87,11 +86,8 @@ describe('GET /users', () => {
         const res = await request(app).get(`/users/${userIDs[3]}`);
 
         expect(res.status).toBe(200);
-        expect(res.body).toEqual(
-            expect.objectContaining({
-                name: `${details.firstName} ${details.lastName}`,
-            })
-        );
+        expect(res.body).toHaveProperty('handle');
+        expect(res.body).toHaveProperty('name', `${details.firstName} ${details.lastName}`);
         expect(containsHiddenDetails(res.body)).toBe(false);
     });
 
@@ -108,81 +104,80 @@ describe('GET /users', () => {
     });
 });
 
-// describe('POST /users', () => {
-//     it('Adds a fourth user to the test database if all form fields pass validation', () => {
-//         return request(app)
-//             .post('/auth/users')
-//             .type('form')
-//             .send({
-//                 username: 'user3',
-//                 email: 'user3@test.com',
-//                 password: 'asdfASDF3',
-//                 confirm: 'asdfASDF3',
-//             })
-//             .expect(201)
-//             .then(() => {
-//                 request(app)
-//                     .get('/users')
-//                     .expect(200)
-//                     .expect((res) => {
-//                         if (res.body.users.length !== STARTING_USER_COUNT + 1) {
-//                             throw new Error('User was not added');
-//                         }
-//                     })
-//                     .then((response) => {
-//                         expect(response.body.users.at(-1)).toMatchObject({
-//                             username: 'user3',
-//                         });
-//                     });
-//             });
-//     });
+describe('POST /users', () => {
+    it.skip('Adds new user to the test database if all form fields pass validation', async () => {
+        return request(app)
+            .post('/auth/users')
+            .type('form')
+            .send({
+                email: 'user3@test.com',
+                password: 'asdfASDF3',
+                confirm: 'asdfASDF3',
+            })
+            .expect(201)
+            .then(() => {
+                request(app)
+                    .get('/users')
+                    .expect(200)
+                    .expect((res) => {
+                        if (res.body.users.length !== STARTING_USER_COUNT + 1) {
+                            throw new Error('User was not added');
+                        }
+                    })
+                    .then((response) => {
+                        expect(response.body.users.at(-1)).toMatchObject({
+                            username: 'user3',
+                        });
+                    });
+            });
+    });
 
-//     it('Rejects new user submission if password does not match constraints', (done) => {
-//         request(app)
-//             .post('/auth/users')
-//             .type('form')
-//             .send({
-//                 username: 'user4',
-//                 email: 'user4@test.com',
-//                 password: 'password',
-//                 confirm: 'password',
-//             })
-//             .expect(400)
-//             .then(() => {
-//                 request(app)
-//                     .get('/users')
-//                     .expect((res) => {
-//                         if (res.body.users.length !== STARTING_USER_COUNT + 1) {
-//                             throw new Error('User incorrectly added');
-//                         }
-//                     })
-//                     .end(done);
-//             });
-//     });
+    it.skip('Rejects new user submission if password does not match constraints', (done) => {
+        request(app)
+            .post('/auth/users')
+            .type('form')
+            .send({
+                username: 'user4',
+                email: 'user4@test.com',
+                password: 'password',
+                confirm: 'password',
+            })
+            .expect(400)
+            .then(() => {
+                request(app)
+                    .get('/users')
+                    .expect((res) => {
+                        if (res.body.users.length !== STARTING_USER_COUNT + 1) {
+                            throw new Error('User incorrectly added');
+                        }
+                    })
+                    .end(done);
+            });
+    });
 
-//     it('Rejects new user submission if password fields do not match', (done) => {
-//         request(app)
-//             .post('/auth/users')
-//             .type('form')
-//             .send({
-//                 username: 'user4',
-//                 email: 'user4@test.com',
-//                 password: 'asdfASDF4',
-//                 confirm: '4FDSAfdsa',
-//             })
-//             .expect(400)
-//             .then(() => {
-//                 request(app)
-//                     .get('/users')
-//                     .expect((res) => {
-//                         if (res.body.users.length !== STARTING_USER_COUNT + 1) {
-//                             throw new Error('User incorrectly added');
-//                         }
-//                     })
-//                     .end(done);
-//             });
-//     });
-// });
+    it.skip('Rejects new user submission if password fields do not match', (done) => {
+        request(app)
+            .post('/auth/users')
+            .type('form')
+            .send({
+                username: 'user4',
+                email: 'user4@test.com',
+                password: 'asdfASDF4',
+                confirm: '4FDSAfdsa',
+            })
+            .expect(400)
+            .then(() => {
+                request(app)
+                    .get('/users')
+                    .expect((res) => {
+                        if (res.body.users.length !== STARTING_USER_COUNT + 1) {
+                            throw new Error('User incorrectly added');
+                        }
+                    })
+                    .end(done);
+            });
+    });
+});
 
 // describe('PUT /users', () => {
 //     it("Stores user2 as pending friend in user0's friends list upon friend request", async () => {

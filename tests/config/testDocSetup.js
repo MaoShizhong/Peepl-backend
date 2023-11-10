@@ -31,7 +31,11 @@ beforeAll(async () => {
         (user) =>
             new Wall({
                 user: user,
-                posts: posts.map((post) => post.author.valueOf() === user._id.valueOf()),
+                posts: posts.map((post) => {
+                    if (post.author.valueOf() === user._id.valueOf()) {
+                        return user._id;
+                    }
+                }),
             })
     );
     const Posts = posts.map((post) => new Post(post));
@@ -39,7 +43,7 @@ beforeAll(async () => {
 
     await Promise.all([
         User.insertMany(Users),
-        Walls.insertMany(Walls),
+        Wall.insertMany(Walls),
         Post.insertMany(Posts),
         Comment.insertMany(Comments),
     ]);

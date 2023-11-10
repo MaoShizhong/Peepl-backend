@@ -48,6 +48,8 @@ exports.getSpecificUser = asyncHandler(async (req, res) => {
         { $match: { _id: new ObjectId(userID) } },
         {
             $project: {
+                _id: 0,
+                handle: 1,
                 'details.firstName': 1,
                 'details.lastName': 1,
                 'details.DOB': removeFieldIfShouldHide('$details.DOB'),
@@ -66,6 +68,11 @@ exports.getSpecificUser = asyncHandler(async (req, res) => {
     } else {
         const { firstName, lastName, ...hideableDetails } = user.details;
 
-        res.json({ _id: user._id, name: `${firstName} ${lastName}`, ...hideableDetails });
+        res.json({
+            _id: user._id,
+            handle: user.handle,
+            name: `${firstName} ${lastName}`,
+            ...hideableDetails,
+        });
     }
 });

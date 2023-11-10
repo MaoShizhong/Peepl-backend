@@ -1,8 +1,10 @@
 const { userIDs } = require('./test_IDs');
+const { generateUsername } = require('unique-username-generator');
 
 exports.users = [
     {
         _id: userIDs[0],
+        handle: generateUsername('-', 6),
         email: 'user0@test.com',
         auth: { strategies: ['local'], password: 'asdfASDF0' },
         details: {
@@ -45,6 +47,7 @@ exports.users = [
     },
     {
         _id: userIDs[1],
+        handle: generateUsername('-', 6),
         email: 'user1@test.com',
         auth: { strategies: ['local'], password: 'asdfASDF1' },
         details: {
@@ -87,6 +90,7 @@ exports.users = [
     },
     {
         _id: userIDs[2],
+        handle: generateUsername('-', 6),
         email: 'user2@test.com',
         auth: { strategies: ['local'], password: 'asdfASDF2' },
         details: {
@@ -129,6 +133,7 @@ exports.users = [
     },
     {
         _id: userIDs[3],
+        handle: generateUsername('-', 6),
         email: 'user3@test.com',
         auth: { strategies: ['local'], password: 'asdfASDF3' },
         details: {
