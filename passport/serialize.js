@@ -10,11 +10,11 @@ exports.deserialize = async (id, done) => {
     try {
         const user = await User.findById(id).exec();
         done(null, {
-            _id: user._id.valueOf(),
-            username: user.username,
+            handle: user.handle,
             email: user.email,
+            details: user.details,
             isDemo: user.isDemo,
-            isGithub: user.auth === 'github',
+            isGithubOnly: !user.auth.strategies.includes('local'),
         });
     } catch (error) {
         done(error);

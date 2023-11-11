@@ -1,31 +1,35 @@
 const LocalStrategy = require('passport-local').Strategy;
 const GithubStrategy = require('passport-github2').Strategy;
 const User = require('../models/User');
-const bcrypt = require('bcrypt');
+const argon2 = require('argon2');
 
-exports.localStrategy = new LocalStrategy(async (username, password, done) => {
-    try {
-        const user = await User.findOne({ username: username });
+exports.localStrategy = new LocalStrategy(
+    { usernameField: 'email' }, // using `email` form field to sign in instead of username
+    async (email, password, done) => {
+        try {
+            const user = await User.findOne({ email: email }).exec();
 
-        if (!user) {
-            return done(null, false);
+            if (!user) {
+                return done(null, false);
+            }
+
+            const matchingPassword = await argon2.verify(user.password, password);
+            if (!matchingPassword) {
+                return done(null, false);
+            }
+
+            return done(null, {
+                _id: user._id.valueOf(),
+                handle: user.handle,
+                email: user.email,
+                details: user.details,
+                isDemo: user.isDemo,
+            });
+        } catch (err) {
+            return done(err);
         }
-
-        const matchingPassword = bcrypt.compare(password, user.password);
-        if (!matchingPassword) {
-            return done(null, false);
-        }
-
-        return done(null, {
-            _id: user._id.valueOf(),
-            username: user.username,
-            email: user.email,
-            isDemo: user.isDemo,
-        });
-    } catch (err) {
-        return done(err);
     }
-});
+);
 
 exports.githubStrategy = new GithubStrategy(
     {
