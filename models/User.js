@@ -21,7 +21,7 @@ const EducationSchema = new Schema(
 
 const FriendSchema = new Schema(
     {
-        user: { type: Schema.Types.ObjectId, ref: 'user', unique: true, required: true },
+        user: { type: Schema.Types.ObjectId, ref: 'user', required: true },
         status: { type: String, enum: ['requested', 'incoming', 'accepted'], required: true },
     },
     { _id: false }

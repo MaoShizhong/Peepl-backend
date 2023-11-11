@@ -13,7 +13,7 @@ exports.localStrategy = new LocalStrategy(
                 return done(null, false);
             }
 
-            const matchingPassword = await argon2.verify(user.password, password);
+            const matchingPassword = await argon2.verify(user.auth.password, password);
             if (!matchingPassword) {
                 return done(null, false);
             }
@@ -24,6 +24,7 @@ exports.localStrategy = new LocalStrategy(
                 email: user.email,
                 details: user.details,
                 isDemo: user.isDemo,
+                isGithubOnly: !user.auth.strategies.includes('local'),
             });
         } catch (err) {
             return done(err);

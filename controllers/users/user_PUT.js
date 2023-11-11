@@ -1,8 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
 const { acceptFriendRequest, rejectFriendRequest } = require('../helpers/friend_requests');
-const { invalidPatternError, notFoundError } = require('../helpers/error_handling');
-const { isValidObjectId } = require('mongoose');
+const { notFoundError } = require('../helpers/error_handling');
 
 exports.respondToFriendRequest = asyncHandler(async (req, res) => {
     // ! when passport implemented, get user ID from req.user and verify with param
@@ -26,20 +25,14 @@ exports.respondToFriendRequest = asyncHandler(async (req, res) => {
         case 'accept': {
             const friendRequestExists = await acceptFriendRequest(self, incomingUser);
 
-            if (!friendRequestExists) {
-                return res.status(403).json(notFoundError);
-            }
-
-            break;
+            if (!friendRequestExists) return res.status(403).json(notFoundError);
+            else break;
         }
         case 'reject': {
             const friendRequestExists = await rejectFriendRequest(self, incomingUser);
 
-            if (!friendRequestExists) {
-                return res.status(403).json(notFoundError);
-            }
-
-            break;
+            if (!friendRequestExists) return res.status(403).json(notFoundError);
+            else break;
         }
         default:
             return res.status(400).end();

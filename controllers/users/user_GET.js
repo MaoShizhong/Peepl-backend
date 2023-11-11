@@ -2,7 +2,6 @@ const asyncHandler = require('express-async-handler');
 const { ObjectId } = require('mongoose').Types;
 const User = require('../../models/User');
 const { notFoundError } = require('../helpers/error_handling');
-const Wall = require('../../models/Wall');
 
 exports.getAllUsers = asyncHandler(async (req, res) => {
     let { search } = req.query;
@@ -107,13 +106,5 @@ exports.getUserFriendsList = asyncHandler(async (req, res) => {
 });
 
 exports.getWall = async (req, res) => {
-    const { userID } = req.params;
-
-    const wall = await Wall.findOne({ user: userID }).exec();
-
-    if (!wall) {
-        res.status(404).json(notFoundError);
-    } else {
-        res.json(wall);
-    }
+    res.end();
 };

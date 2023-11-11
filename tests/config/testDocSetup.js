@@ -3,11 +3,11 @@ const { friendUsers } = require('./test_friends');
 const { posts } = require('./test_posts');
 const { comments } = require('./test_comments');
 const User = require('../../models/User');
-const Wall = require('../../models/Wall');
 const Post = require('../../models/Post');
 const Comment = require('../../models/Comment');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const argon2 = require('argon2');
 
 beforeAll(async () => {
     const mongoServer = await MongoMemoryServer.create();
@@ -27,27 +27,25 @@ beforeAll(async () => {
         console.log(`MongoDB successfully connected to ${mongoUri}`);
     });
 
-    const Users = users.map((user) => new User(user));
-    const Walls = users.map(
-        (user) =>
-            new Wall({
-                user: user,
-                posts: posts
-                    .map((post) => {
-                        if (post.author === user._id) {
-                            return post._id;
-                        }
-                    })
-                    .filter((id) => !!id),
-            })
+    const Users = await Promise.all(
+        users.map(async (user) => {
+            const clonedUser = structuredClone(user); // change object reference
+            clonedUser.auth.password = await argon2.hash(clonedUser.auth.password);
+            return new User(clonedUser);
+        })
     );
-    const FriendUsers = friendUsers.map((user) => new User(user));
+    const FriendUsers = await Promise.all(
+        friendUsers.map(async (user) => {
+            const clonedUser = structuredClone(user); // change object reference
+            clonedUser.auth.password = await argon2.hash(clonedUser.auth.password);
+            return new User(clonedUser);
+        })
+    );
     const Posts = posts.map((post) => new Post(post));
     const Comments = comments.map((comment) => new Comment(comment));
 
     await Promise.all([
         User.insertMany(Users),
-        Wall.insertMany(Walls),
         User.insertMany(FriendUsers),
         Post.insertMany(Posts),
         Comment.insertMany(Comments),

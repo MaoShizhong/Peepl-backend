@@ -2,7 +2,6 @@ const asyncHandler = require('express-async-handler');
 const { body, validationResult } = require('express-validator');
 const argon2 = require('argon2');
 const User = require('../../models/User');
-const Wall = require('../../models/Wall');
 const { generateUsername } = require('unique-username-generator');
 
 const AGE_LIMIT = 13;
@@ -91,21 +90,7 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
             },
         });
 
-        const newUserWall = new Wall({
-            user: newUser._id,
-            posts: [],
-        });
-
-        await Promise.all([newUser.save(), newUserWall.save()]);
-
-        // ! remove when passport implemented
-        req.user = {
-            handle: newUser.handle,
-            email: newUser.email,
-            auth: newUser.auth,
-            details: newUser.details,
-            isDemo: newUser.isDemo,
-        };
+        await newUser.save();
     } catch (error) {
         return res
             .status(502)
@@ -116,13 +101,18 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
 });
 
 exports.login = (req, res) => {
-    const { handle, email, auth, details, isDemo } = req.user;
+    const { handle, email, details, isDemo, isGithubOnly } = req.user;
 
     res.status(201).json({
         handle: handle,
         email: email,
         details: details,
         isDemo: isDemo,
-        isGithubOnly: !auth.strategies.includes('local'),
+        isGithubOnly: isGithubOnly,
     });
+};
+
+exports.checkAuthenticated = (req, res, next) => {
+    if (req.isAuthenticated()) next();
+    else res.status(401).json({ error: 'Not logged in.' });
 };

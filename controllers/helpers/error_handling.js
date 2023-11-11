@@ -5,7 +5,10 @@ const invalidPatternError = (string) => {
 };
 
 exports.invalidPatternError = invalidPatternError;
+
 exports.notFoundError = { error: '404: Resource could not be found.' };
+
+exports.notLoggedInError = { error: 'Not logged in.' };
 
 exports.validateObjectIDs = (req, res, next) => {
     for (const param of Object.values(req.params)) {

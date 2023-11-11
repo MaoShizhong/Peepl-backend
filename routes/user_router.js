@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const { checkAuthenticated } = require('../controllers/auth/auth');
 const {
     getAllUsers,
     getSpecificUser,
@@ -11,6 +12,9 @@ const {
 const { validateObjectIDs } = require('../controllers/helpers/error_handling');
 
 const userRouter = Router();
+
+// All of these routes require being logged in
+userRouter.use('/', checkAuthenticated);
 
 userRouter.get('/', getAllUsers);
 userRouter.get('/:userID', validateObjectIDs, getSpecificUser);

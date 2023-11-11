@@ -1,14 +1,7 @@
-const express = require('express');
 const request = require('supertest');
-const userRouter = require('../routes/user_router');
-const authRouter = require('../routes/auth_router');
 const { invalidPatternError, notFoundError } = require('../controllers/helpers/error_handling');
 
-const app = express();
-
-app.use(express.urlencoded({ extended: false }));
-app.use('/users', userRouter);
-app.use('/auth', authRouter);
+const app = require('./config/test_server');
 
 const { users } = require('./config/test_users');
 const { friendUsers } = require('./config/test_friends');
@@ -19,9 +12,29 @@ const STARTING_USER_COUNT = users.length + friendUsers.length;
 const NONEXISTANT_ID = '65269890203feea7cca8826b';
 const INVALID_OBJECT_ID = 'foobar';
 
+const loggedInUser = request.agent(app);
+
+describe('Login with user', () => {
+    it('Logs a user in with the credentials via local strategy', async () => {
+        const loginRes = await loggedInUser
+            .post('/auth/sessions/local')
+            .type('form')
+            .send({ email: users[0].email, password: users[0].auth.password });
+        expect(loginRes.status).toBe(201);
+    });
+
+    it('Does not log a user if invalid credentials are provided', async () => {
+        const loginRes = await request(app)
+            .post('/auth/sessions/local')
+            .type('form')
+            .send({ email: users[0].email, password: 'fooBAR1234' });
+        expect(loginRes.status).toBe(401);
+    });
+});
+
 describe('Get user details/walls', () => {
     test(`In-memory database has ${STARTING_USER_COUNT} test users loaded on test start`, async () => {
-        const res = await request(app).get('/users');
+        const res = await loggedInUser.get('/users');
 
         expect(res.status).toBe(200);
         expect(res.body.users.length).toBe(STARTING_USER_COUNT);
@@ -35,14 +48,14 @@ describe('Get user details/walls', () => {
             return JSON.stringify(properties) === JSON.stringify(expectedProperties);
         };
 
-        const res = await request(app).get('/users');
+        const res = await loggedInUser.get('/users');
 
         expect(res.status).toEqual(200);
         expect(res.body.users.every(containsOnlyExpectedProperties)).toBe(true);
     });
 
     it(`Returns only users whose names match a provided search query`, async () => {
-        const res = await request(app).get('/users?search=rst2');
+        const res = await loggedInUser.get('/users?search=rst2');
 
         expect(res.status).toBe(200);
         expect(res.body.users.length).toBe(1);
@@ -52,7 +65,7 @@ describe('Get user details/walls', () => {
     });
 
     it(`Returns only users whose names match a provided search query (case insensitive)`, async () => {
-        const res = await request(app).get('/users?search=last');
+        const res = await loggedInUser.get('/users?search=last');
 
         expect(res.status).toBe(200);
         expect(res.body.users.length).toBe(STARTING_USER_COUNT);
@@ -61,7 +74,7 @@ describe('Get user details/walls', () => {
     it("Gets first user from in-memory test database, showing name and other details marked with 'visibility: everyone'", async () => {
         const { details } = users[0];
 
-        const res = await request(app).get(`/users/${userIDs[0]}`);
+        const res = await loggedInUser.get(`/users/${userIDs[0]}`);
 
         expect(res.status).toBe(200);
         expect(res.body).not.toHaveProperty('_id');
@@ -88,7 +101,7 @@ describe('Get user details/walls', () => {
             return resKeys.some((key) => hiddenDetails.includes(key));
         };
 
-        const res = await request(app).get(`/users/${userIDs[3]}`);
+        const res = await loggedInUser.get(`/users/${userIDs[3]}`);
 
         expect(res.status).toBe(200);
         expect(Object.getOwnPropertyNames(res.body)).toEqual(['handle', 'name']);
@@ -97,20 +110,20 @@ describe('Get user details/walls', () => {
     });
 
     it('Returns 404 when fetching non-existant user', async () => {
-        const res = await request(app).get(`/users/${NONEXISTANT_ID}`);
+        const res = await loggedInUser.get(`/users/${NONEXISTANT_ID}`);
         expect(res.status).toBe(404);
         expect(res.body).toEqual(notFoundError);
     });
 
     it('Returns 400 when fetching with invalid ObjectID pattern', async () => {
-        const res = await request(app).get(`/users/${INVALID_OBJECT_ID}`);
+        const res = await loggedInUser.get(`/users/${INVALID_OBJECT_ID}`);
         expect(res.status).toBe(400);
         expect(res.body).toEqual(invalidPatternError(INVALID_OBJECT_ID));
     });
 });
 
 describe('Successful user creation', () => {
-    it('Adds new user and associated wall to the test database if all form fields pass validation', async () => {
+    it('Adds new user to the test database if all form fields pass validation', async () => {
         const postRes = await request(app).post('/auth/users').type('form').send({
             email: 'new@new.com',
             password: 'newNEW1234',
@@ -123,21 +136,16 @@ describe('Successful user creation', () => {
         });
         expect(postRes.status).toBe(201);
 
-        const getRes = await request(app).get('/users');
+        const getRes = await loggedInUser.get('/users');
         expect(getRes.status).toBe(200);
         expect(getRes.body.users.length).toBe(STARTING_USER_COUNT + 1);
 
         const newUser = getRes.body.users.at(-1);
         expect(newUser).toHaveProperty('name', 'NewFirst NewLast');
         expect(newUser).not.toHaveProperty('password');
-
-        const wallRes = await request(app).get(`/users/${newUser._id}/wall`);
-        expect(wallRes.status).toBe(200);
-        expect(wallRes.body).toHaveProperty('user', newUser._id);
-        expect(wallRes.body.posts.length).toBe(0);
     });
 
-    it('Adds new user and associated wall to the test database even if optional form fields are missing', async () => {
+    it('Adds new user to the test database even if optional form fields are missing', async () => {
         const postRes = await request(app).post('/auth/users').type('form').send({
             email: 'new2@new2.com',
             password: 'newNEW12342',
@@ -148,7 +156,7 @@ describe('Successful user creation', () => {
         });
         expect(postRes.status).toBe(201);
 
-        const getRes = await request(app).get('/users');
+        const getRes = await loggedInUser.get('/users');
         expect(getRes.status).toBe(200);
         expect(getRes.body.users.length).toBe(STARTING_USER_COUNT + 2);
 
@@ -157,17 +165,12 @@ describe('Successful user creation', () => {
         expect(newUser).not.toHaveProperty('password');
         expect(newUser).not.toHaveProperty('city');
         expect(newUser).not.toHaveProperty('country');
-
-        const wallRes = await request(app).get(`/users/${newUser._id}/wall`);
-        expect(wallRes.status).toBe(200);
-        expect(wallRes.body).toHaveProperty('user', newUser._id);
-        expect(wallRes.body.posts.length).toBe(0);
     });
 });
 
 describe('Rejecting invalid user creation', () => {
     afterEach(async () => {
-        const getRes = await request(app).get('/users');
+        const getRes = await loggedInUser.get('/users');
         expect(getRes.body.users.length).toBe(STARTING_USER_COUNT + 2);
     });
 
