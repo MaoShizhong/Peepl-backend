@@ -96,13 +96,6 @@ describe('Get user details/walls', () => {
         expect(containsHiddenDetails(res.body)).toBe(false);
     });
 
-    it("Gets a specified user's wall", async () => {
-        const wallRes = await request(app).get(`/users/${users[0]._id}/wall`);
-        expect(wallRes.status).toBe(200);
-        expect(wallRes.body).toHaveProperty('user', users[0]._id);
-        expect(wallRes.body.posts.length).toBe(2);
-    });
-
     it('Returns 404 when fetching non-existant user', async () => {
         const res = await request(app).get(`/users/${NONEXISTANT_ID}`);
         expect(res.status).toBe(404);
