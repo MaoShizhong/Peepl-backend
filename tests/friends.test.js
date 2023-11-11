@@ -16,7 +16,7 @@ const NONEXISTANT_ID = '65269890203feea7cca8826b';
 const INVALID_OBJECT_ID = 'foobar';
 
 describe('Send friend requests', () => {
-    it.skip("Adds a 'requested' friend to a user's friends list upon sending a friend request", async () => {
+    it("Adds a 'requested' friend to a user's friends list upon sending a friend request", async () => {
         const requestRes1 = await request(app).post(
             `/users/${userIDs[0]}/friends?requested=${userIDs[2]}`
         );
@@ -43,7 +43,7 @@ describe('Send friend requests', () => {
         });
     });
 
-    it.skip("Adds an 'incoming' friend request to the recipient user of a new friend request", async () => {
+    it("Adds an 'incoming' friend request to the recipient user of a new friend request", async () => {
         const getRes1 = await request(app).get(`/users/${userIDs[2]}/friends`);
         const getRes2 = await request(app).get(`/users/${userIDs[3]}/friends`);
 
@@ -60,7 +60,7 @@ describe('Send friend requests', () => {
         });
     });
 
-    it.skip('Marks respective requested/incoming friend requests as accepted when the recipient accepts', async () => {
+    it('Marks respective requested/incoming friend requests as accepted when the recipient accepts', async () => {
         const acceptRes = await request(app).put(
             `/users/${userIDs[2]}/friends?incoming=${userIDs[0]}&action=accept`
         );
@@ -86,9 +86,9 @@ describe('Send friend requests', () => {
         ]);
     });
 
-    it.skip('Deletes respective requested/incoming friend requests when the recipient rejects', async () => {
+    it('Deletes respective requested/incoming friend requests when the recipient rejects', async () => {
         const rejectRes = await request(app).put(
-            `/users/${userIDs[2]}/friends?incoming=${userIDs[0]}&action=reject`
+            `/users/${userIDs[3]}/friends?incoming=${userIDs[1]}&action=reject`
         );
         expect(rejectRes.status).toBe(200);
 
@@ -102,32 +102,24 @@ describe('Send friend requests', () => {
         expect(getRes2.body).toEqual([]);
     });
 
-    it.skip('Returns a 400 if either target user/action query is missing', async () => {
+    it('Returns a 400 if any query string is missing', async () => {
         const missingRes1 = await request(app).put(
             `/users/${userIDs[1]}/friends?incoming=${userIDs[0]}`
         );
         const missingRes2 = await request(app).put(`/users/${userIDs[1]}/friends?action=reject`);
+        const missingRes3 = await request(app).post(`/users/${userIDs[1]}/friends`);
 
-        expect(missingRes1.status).toBe(400);
-        expect(missingRes2.status).toBe(400);
+        [missingRes1, missingRes2, missingRes3].forEach((res) => {
+            expect(res.status).toBe(400);
+            expect(res.body).toEqual({ error: 'Missing query string(s).' });
+        });
     });
 
-    it.skip("Returns a 400 if an invalid ObjectId is passed as the 'requested' query string", async () => {
+    it("Returns a 400 if an invalid ObjectId is passed as the 'requested' query string", async () => {
         const requestRes = await request(app).post(
             `/users/${userIDs[1]}/friends?requested=${INVALID_OBJECT_ID}`
         );
         expect(requestRes.status).toEqual(400);
-
-        const getRes = await request(app).get(`/users/${userIDs[1]}/friends`);
-        expect(getRes.status).toBe(200);
-        expect(getRes.body).toEqual([]);
-    });
-
-    it.skip('Prevents attempting to add a non-existant user as a friend, returning a 404', async () => {
-        const requestRes = await request(app).post(
-            `/users/${userIDs[1]}/friends?requested=${NONEXISTANT_ID}`
-        );
-        expect(requestRes.status).toBe(404);
         expect(requestRes.body).toEqual(invalidPatternError(INVALID_OBJECT_ID));
 
         const getRes = await request(app).get(`/users/${userIDs[1]}/friends`);
@@ -135,12 +127,24 @@ describe('Send friend requests', () => {
         expect(getRes.body).toEqual([]);
     });
 
-    it.skip('Prevents actioning upon a non-existant friend request (valid user ID), returning a 403', async () => {
+    it('Prevents attempting to add a non-existant user as a friend, returning a 404', async () => {
+        const requestRes = await request(app).post(
+            `/users/${userIDs[1]}/friends?requested=${NONEXISTANT_ID}`
+        );
+        expect(requestRes.status).toBe(404);
+        expect(requestRes.body).toEqual(notFoundError);
+
+        const getRes = await request(app).get(`/users/${userIDs[1]}/friends`);
+        expect(getRes.status).toBe(200);
+        expect(getRes.body).toEqual([]);
+    });
+
+    it('Prevents actioning upon a non-existant friend request (valid user ID), returning a 403', async () => {
         const nonexistantRes = await request(app).put(
             `/users/${userIDs[1]}/friends?incoming=${userIDs[0]}&action=accept`
         );
         expect(nonexistantRes.status).toBe(403);
-        expect(nonexistantRes.status).toEqual(notFoundError);
+        expect(nonexistantRes.body).toEqual(notFoundError);
 
         const user2Res = await request(app).get(`/users/${userIDs[1]}/friends`);
         expect(user2Res.status).toBe(200);

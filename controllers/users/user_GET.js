@@ -78,6 +78,34 @@ exports.getSpecificUser = asyncHandler(async (req, res) => {
     }
 });
 
+exports.getUserFriendsList = asyncHandler(async (req, res) => {
+    const { userID } = req.params;
+
+    const user = await User.findById(userID, 'friends -_id')
+        .populate({
+            path: 'friends.user',
+            options: { projection: 'details.firstName details.lastName' },
+        })
+        .exec();
+
+    if (!user) {
+        res.status(404).end();
+    }
+
+    const formattedFriendsList = user.friends.map((friend) => {
+        return {
+            user: {
+                _id: friend.user._id,
+                firstName: friend.user.details.firstName,
+                lastName: friend.user.details.lastName,
+            },
+            status: friend.status,
+        };
+    });
+
+    res.json(formattedFriendsList);
+});
+
 exports.getWall = async (req, res) => {
     const { userID } = req.params;
 
