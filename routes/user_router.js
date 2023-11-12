@@ -6,6 +6,8 @@ const {
     getWall,
     getUserFriendsList,
     validateFriendQueryObjectIDs,
+    validatePostForm,
+    writePostToWall,
     verifySameUser,
     sendFriendRequest,
     respondToFriendRequest,
@@ -22,6 +24,7 @@ userRouter.get('/:userID', validateObjectIDs, getSpecificUser);
 userRouter.get('/:userID/wall', validateObjectIDs, getWall);
 userRouter.get('/:userID/friends', validateObjectIDs, getUserFriendsList);
 
+userRouter.post('/:userID/posts', validateObjectIDs, validatePostForm, writePostToWall);
 userRouter.post(
     '/:userID/friends',
     verifySameUser,

@@ -2,6 +2,9 @@ const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
 const { invalidPatternError, notFoundError } = require('../helpers/error_handling');
 const { isValidObjectId } = require('mongoose');
+const Post = require('../../models/Post');
+const { body, validationResult } = require('express-validator');
+const { POST_CHAR_LIMIT } = require('../helpers/constants');
 
 exports.validateFriendQueryObjectIDs = (req, res, next) => {
     const { requested, incoming } = req.query;
@@ -47,4 +50,39 @@ exports.sendFriendRequest = asyncHandler(async (req, res) => {
     ]);
 
     res.json({ message: 'Friend request sent successfully.' });
+});
+
+exports.validatePostForm = body('body')
+    .notEmpty()
+    .withMessage('Post cannot be empty.')
+    .isLength({ max: POST_CHAR_LIMIT })
+    .withMessage(`Max. ${POST_CHAR_LIMIT} characters.`);
+
+exports.writePostToWall = asyncHandler(async (req, res) => {
+    const { userID } = req.params;
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Send only the first form error back to user
+        const error = errors.array()[0].msg;
+        return res.status(400).json({ error });
+    }
+
+    const userExists = await User.exists({ _id: userID }).exec();
+
+    if (!userExists) {
+        return res.status(404).json(notFoundError);
+    }
+
+    const wallPost = new Post({
+        wall: userID,
+        author: req.user._id,
+        timestamp: new Date(),
+        body: req.body.body,
+        likes: [],
+    });
+
+    await wallPost.save();
+
+    res.status(201).json(wallPost);
 });

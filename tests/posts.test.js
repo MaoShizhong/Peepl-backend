@@ -33,24 +33,32 @@ describe('Get a wall of posts', () => {
         expect(wallRes.body).toEqual(notLoggedInError);
     });
 
-    it.skip('Gets own wall if logged in', async () => {
+    it('Gets own wall if logged in', async () => {
         const wallRes = await loggedInUser.get(`/users/${userIDs[0]}/wall`);
         expect(wallRes.status).toBe(200);
         expect(wallRes.body.length).toBe(startingPostsOnWall0.length);
     });
 
-    it.skip("Gets another user's wall", async () => {
+    it("Gets another user's wall", async () => {
         const wallRes = await loggedInUser.get(`/users/${userIDs[1]}/wall`);
         expect(wallRes.status).toBe(200);
-        expect(wallRes.body).toHaveProperty('user', userIDs[1]);
         expect(wallRes.body.length).toBe(startingPostsOnWall1.length);
     });
 
-    it.skip('Wall posts are populated and ordered by date posted (newest first)', async () => {
+    it('Wall posts are populated and ordered by date posted (newest first)', async () => {
         const wallRes = await loggedInUser.get(`/users/${userIDs[0]}/wall`);
+
         expect(wallRes.status).toBe(200);
-        expect(wallRes.body.at(0)).toEqual(startingPostsOnWall1.at(-1));
-        expect(wallRes.body.at(-1)).toEqual(startingPostsOnWall1.at(0));
+
+        expect(wallRes.body.at(0)).toHaveProperty('body', startingPostsOnWall0.at(-1).body);
+        expect(wallRes.body.at(-1)).toHaveProperty('body', startingPostsOnWall0.at(0).body);
+
+        expect(wallRes.body.at(0).author).toMatchObject({
+            details: { firstName: 'First1', lastName: 'Last1' },
+        });
+        expect(wallRes.body.at(-1).author).toMatchObject({
+            details: { firstName: 'First0', lastName: 'Last0' },
+        });
     });
 });
 
@@ -58,33 +66,34 @@ describe('Adding new posts to wall', () => {
     const postOnOwnWall = 'Added by First0 Last0 own';
     const postOnAnotherWall = 'Added by First0 Last0 not own';
 
-    it.skip('Adds a post to own wall', async () => {
+    it('Adds a post to own wall', async () => {
         const postRes = await loggedInUser
             .post(`/users/${userIDs[0]}/posts`)
             .type('form')
             .send({ body: postOnOwnWall });
-        expect(postRes.status).toBe(200);
+        expect(postRes.status).toBe(201);
 
         const wallRes = await loggedInUser.get(`/users/${userIDs[0]}/wall`);
         expect(wallRes.status).toBe(200);
-        expect(wallRes.body.posts.length).toBe(startingPostsOnWall0.length + 1);
-        expect(wallRes.body.posts.at(0).body).toEqual(postOnOwnWall);
+        expect(wallRes.body.length).toBe(startingPostsOnWall0.length + 1);
+        expect(wallRes.body.at(0).body).toEqual(postOnOwnWall);
     });
 
-    it.skip("Adds a post to another user's wall", async () => {
+    it("Adds a post to another user's wall", async () => {
         const postRes = await loggedInUser
             .post(`/users/${userIDs[1]}/posts`)
             .type('form')
             .send({ body: postOnAnotherWall });
-        expect(postRes.status).toBe(200);
+        expect(postRes.status).toBe(201);
 
-        const wallRes = await loggedInUser.get(`/users/${userIDs[0]}/wall`);
+        const wallRes = await loggedInUser.get(`/users/${userIDs[1]}/wall`);
         expect(wallRes.status).toBe(200);
-        expect(wallRes.body.posts.length).toBe(startingPostsOnWall1.length + 1);
-        expect(wallRes.body.posts.at(0).body).toEqual(postOnAnotherWall);
+        expect(wallRes.body.length).toBe(startingPostsOnWall1.length + 1);
+        expect(wallRes.body.at(0).body).toEqual(postOnAnotherWall);
+        expect(wallRes.body.at(0).author._id).toBe(userIDs[0]);
     });
 
-    it.skip('Does not add a new post if the post body is empty', async () => {
+    it('Does not add a new post if the post body is empty', async () => {
         const postRes = await loggedInUser
             .post(`/users/${userIDs[0]}/posts`)
             .type('form')
@@ -94,11 +103,11 @@ describe('Adding new posts to wall', () => {
 
         const wallRes = await loggedInUser.get(`/users/${userIDs[0]}/wall`);
         expect(wallRes.status).toBe(200);
-        expect(wallRes.body.posts.length).toBe(startingPostsOnWall0.length + 1);
-        expect(wallRes.body.posts.at(0).body).toEqual(postOnOwnWall);
+        expect(wallRes.body.length).toBe(startingPostsOnWall0.length + 1);
+        expect(wallRes.body.at(0).body).toEqual(postOnOwnWall);
     });
 
-    it.skip(`Does not add a new post if the post body exceeds the character limit of ${POST_CHAR_LIMIT}`, async () => {
+    it(`Does not add a new post if the post body exceeds the character limit of ${POST_CHAR_LIMIT}`, async () => {
         const postRes = await loggedInUser
             .post(`/users/${userIDs[0]}/posts`)
             .type('form')
@@ -108,7 +117,7 @@ describe('Adding new posts to wall', () => {
 
         const wallRes = await loggedInUser.get(`/users/${userIDs[0]}/wall`);
         expect(wallRes.status).toBe(200);
-        expect(wallRes.body.posts.length).toBe(startingPostsOnWall0.length + 1);
-        expect(wallRes.body.posts.at(0).body).toEqual(postOnOwnWall);
+        expect(wallRes.body.length).toBe(startingPostsOnWall0.length + 1);
+        expect(wallRes.body.at(0).body).toEqual(postOnOwnWall);
     });
 });

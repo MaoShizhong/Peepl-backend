@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const { ObjectId } = require('mongoose').Types;
 const User = require('../../models/User');
+const Post = require('../../models/Post');
 const { notFoundError } = require('../helpers/error_handling');
 
 exports.getAllUsers = asyncHandler(async (req, res) => {
@@ -88,7 +89,7 @@ exports.getUserFriendsList = asyncHandler(async (req, res) => {
         .exec();
 
     if (!user) {
-        res.status(404).end();
+        res.status(404).json(notFoundError);
     }
 
     const formattedFriendsList = user.friends.map((friend) => {
@@ -105,6 +106,16 @@ exports.getUserFriendsList = asyncHandler(async (req, res) => {
     res.json(formattedFriendsList);
 });
 
-exports.getWall = async (req, res) => {
-    res.end();
-};
+exports.getWall = asyncHandler(async (req, res) => {
+    const { userID } = req.params;
+
+    const wallPosts = await Post.find({ wall: userID })
+        .populate({
+            path: 'author',
+            options: { projection: 'handle details.firstName details.lastName' },
+        })
+        .sort({ timestamp: -1 })
+        .exec();
+
+    res.json(wallPosts);
+});
