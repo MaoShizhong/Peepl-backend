@@ -1,5 +1,5 @@
 const { getAllUsers, getSpecificUser, getWall, getUserFriendsList } = require('./user_GET');
-const { validateFriendQueryObjectIDs, sendFriendRequest } = require('./user_POST');
+const { validateFriendQueryObjectIDs, verifySameUser, sendFriendRequest } = require('./user_POST');
 const { respondToFriendRequest } = require('./user_PUT');
 
 module.exports = {
@@ -8,6 +8,7 @@ module.exports = {
     getWall,
     getUserFriendsList,
     validateFriendQueryObjectIDs,
+    verifySameUser,
     sendFriendRequest,
     respondToFriendRequest,
 };

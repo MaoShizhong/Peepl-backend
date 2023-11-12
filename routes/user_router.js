@@ -6,6 +6,7 @@ const {
     getWall,
     getUserFriendsList,
     validateFriendQueryObjectIDs,
+    verifySameUser,
     sendFriendRequest,
     respondToFriendRequest,
 } = require('../controllers/users/user');
@@ -23,6 +24,7 @@ userRouter.get('/:userID/friends', validateObjectIDs, getUserFriendsList);
 
 userRouter.post(
     '/:userID/friends',
+    verifySameUser,
     validateObjectIDs,
     validateFriendQueryObjectIDs,
     sendFriendRequest
@@ -30,6 +32,7 @@ userRouter.post(
 
 userRouter.put(
     '/:userID/friends',
+    verifySameUser,
     validateObjectIDs,
     validateFriendQueryObjectIDs,
     respondToFriendRequest

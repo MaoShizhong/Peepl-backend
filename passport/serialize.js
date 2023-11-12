@@ -10,6 +10,7 @@ exports.deserialize = async (id, done) => {
     try {
         const user = await User.findById(id).exec();
         done(null, {
+            _id: user._id.valueOf(),
             handle: user.handle,
             email: user.email,
             details: user.details,

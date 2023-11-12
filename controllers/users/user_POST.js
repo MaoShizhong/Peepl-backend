@@ -15,6 +15,14 @@ exports.validateFriendQueryObjectIDs = (req, res, next) => {
     next();
 };
 
+exports.verifySameUser = (req, res, next) => {
+    const { userID } = req.params;
+    const { _id } = req.user;
+
+    if (userID === _id) next();
+    else res.status(403).json({ error: 'User not authorised to make this request.' });
+};
+
 exports.sendFriendRequest = asyncHandler(async (req, res) => {
     // When passport implemented, userID will be obtained from req.user
     const { userID } = req.params;
