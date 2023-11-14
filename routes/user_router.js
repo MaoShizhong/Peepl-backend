@@ -8,6 +8,8 @@ const {
     validateFriendQueryObjectIDs,
     validatePostForm,
     writePostToWall,
+    likePost,
+    unlikePost,
     verifySameUser,
     sendFriendRequest,
     respondToFriendRequest,
@@ -16,29 +18,42 @@ const { validateObjectIDs } = require('../controllers/helpers/error_handling');
 
 const userRouter = Router();
 
-// All of these routes require being logged in
+/*
+    - Compulsory middleware
+*/
+
+// All routes require being logged in
 userRouter.use('/', checkAuthenticated);
+// All routes that contain objectIDs require objectID validation
+userRouter.use('/:userID', validateObjectIDs);
 
+/*
+    - Routes
+*/
+
+/*
+    Users
+*/
 userRouter.get('/', getAllUsers);
-userRouter.get('/:userID', validateObjectIDs, getSpecificUser);
-userRouter.get('/:userID/wall', validateObjectIDs, getWall);
-userRouter.get('/:userID/friends', validateObjectIDs, getUserFriendsList);
+userRouter.get('/:userID', getSpecificUser);
 
-userRouter.post('/:userID/posts', validateObjectIDs, validatePostForm, writePostToWall);
-userRouter.post(
-    '/:userID/friends',
-    verifySameUser,
-    validateObjectIDs,
-    validateFriendQueryObjectIDs,
-    sendFriendRequest
-);
+/*
+    Wall and posts
+*/
+userRouter.get('/:userID/posts', getWall);
+userRouter.post('/:userID/posts', validatePostForm, writePostToWall);
+userRouter.post('/:userID/posts/:postID/likes', likePost);
+userRouter.delete('/:userID/posts/:postID/likes', unlikePost);
 
-userRouter.put(
-    '/:userID/friends',
-    verifySameUser,
-    validateObjectIDs,
-    validateFriendQueryObjectIDs,
-    respondToFriendRequest
-);
+/*
+    Friends
+*/
+userRouter.get('/:userID/friends', getUserFriendsList);
+
+// Simply getting a user's friends list does not require these validations
+userRouter.use('/:userID/friends', verifySameUser, validateFriendQueryObjectIDs);
+
+userRouter.post('/:userID/friends', sendFriendRequest);
+userRouter.put('/:userID/friends', respondToFriendRequest);
 
 module.exports = userRouter;

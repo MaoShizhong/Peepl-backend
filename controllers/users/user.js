@@ -5,8 +5,10 @@ const {
     sendFriendRequest,
     validatePostForm,
     writePostToWall,
+    likePost,
 } = require('./user_POST');
 const { respondToFriendRequest } = require('./user_PUT');
+const { unlikePost } = require('./user_DELETE');
 
 module.exports = {
     getAllUsers,
@@ -17,6 +19,8 @@ module.exports = {
     verifySameUser,
     validatePostForm,
     writePostToWall,
+    likePost,
+    unlikePost,
     sendFriendRequest,
     respondToFriendRequest,
 };

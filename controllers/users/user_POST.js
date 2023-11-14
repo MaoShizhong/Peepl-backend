@@ -86,3 +86,21 @@ exports.writePostToWall = asyncHandler(async (req, res) => {
 
     res.status(201).json(wallPost);
 });
+
+exports.likePost = asyncHandler(async (req, res) => {
+    const { postID } = req.params;
+    const { _id } = req.user;
+
+    // Add like only if post is not already liked by the user
+    const post = await Post.findOneAndUpdate(
+        { _id: postID, likes: { $ne: _id } },
+        { $push: { likes: _id } },
+        { new: true }
+    ).exec();
+
+    if (!post) {
+        res.status(400).json({ error: 'Post already liked.' });
+    } else {
+        res.json({ post });
+    }
+});
