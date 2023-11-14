@@ -1,20 +1,15 @@
 const { getAllUsers, getSpecificUser, getWall, getUserFriendsList } = require('./user_GET');
-const {
-    validateFriendQueryObjectIDs,
-    verifySameUser,
-    sendFriendRequest,
-    validatePostForm,
-    writePostToWall,
-    likePost,
-} = require('./user_POST');
-const { respondToFriendRequest } = require('./user_PUT');
-const { unlikePost } = require('./user_DELETE');
+const { sendFriendRequest, validatePostForm, writePostToWall, likePost } = require('./user_POST');
+const { respondToFriendRequest, editPost } = require('./user_PUT');
+const { unlikePost, deletePost } = require('./user_DELETE');
+const { validateObjectIDs, validateFriendQueryObjectIDs, verifySameUser } = require('./verify');
 
 module.exports = {
     getAllUsers,
     getSpecificUser,
     getWall,
     getUserFriendsList,
+    validateObjectIDs,
     validateFriendQueryObjectIDs,
     verifySameUser,
     validatePostForm,
@@ -23,4 +18,6 @@ module.exports = {
     unlikePost,
     sendFriendRequest,
     respondToFriendRequest,
+    editPost,
+    deletePost,
 };

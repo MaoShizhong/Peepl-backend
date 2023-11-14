@@ -5,6 +5,7 @@ const {
     getSpecificUser,
     getWall,
     getUserFriendsList,
+    validateObjectIDs,
     validateFriendQueryObjectIDs,
     validatePostForm,
     writePostToWall,
@@ -13,8 +14,9 @@ const {
     verifySameUser,
     sendFriendRequest,
     respondToFriendRequest,
+    editPost,
+    deletePost,
 } = require('../controllers/users/user');
-const { validateObjectIDs } = require('../controllers/helpers/error_handling');
 
 const userRouter = Router();
 
@@ -26,6 +28,7 @@ const userRouter = Router();
 userRouter.use('/', checkAuthenticated);
 // All routes that contain objectIDs require objectID validation
 userRouter.use('/:userID', validateObjectIDs);
+userRouter.use('/:userID/posts/:postID', validateObjectIDs);
 
 /*
     - Routes
@@ -43,6 +46,8 @@ userRouter.get('/:userID', getSpecificUser);
 userRouter.get('/:userID/posts', getWall);
 userRouter.post('/:userID/posts', validatePostForm, writePostToWall);
 userRouter.post('/:userID/posts/:postID/likes', likePost);
+userRouter.put('/:userID/posts/:postID', verifySameUser, validatePostForm, editPost);
+userRouter.delete('/:userID/posts/:postID', verifySameUser, deletePost);
 userRouter.delete('/:userID/posts/:postID/likes', unlikePost);
 
 /*

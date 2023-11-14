@@ -1,5 +1,3 @@
-const { isValidObjectId } = require('mongoose');
-
 const invalidPatternError = (string) => {
     return { error: `${string} is not a valid ObjectId pattern` };
 };
@@ -10,12 +8,4 @@ exports.notFoundError = { error: '404: Resource could not be found.' };
 
 exports.notLoggedInError = { error: 'Not logged in.' };
 
-exports.validateObjectIDs = (req, res, next) => {
-    for (const param of Object.values(req.params)) {
-        if (!isValidObjectId(param)) {
-            return res.status(400).json(invalidPatternError(param));
-        }
-    }
-
-    next();
-};
+exports.unauthorisedError = { error: 'User not authorised to make this request.' };

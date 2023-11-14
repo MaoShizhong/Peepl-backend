@@ -1,30 +1,9 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
-const { invalidPatternError, notFoundError } = require('../helpers/error_handling');
-const { isValidObjectId } = require('mongoose');
 const Post = require('../../models/Post');
+const { notFoundError } = require('../helpers/error_handling');
 const { body, validationResult } = require('express-validator');
 const { POST_CHAR_LIMIT } = require('../helpers/constants');
-
-exports.validateFriendQueryObjectIDs = (req, res, next) => {
-    const { requested, incoming } = req.query;
-
-    for (const query of [requested, incoming]) {
-        if (query && !isValidObjectId(query)) {
-            return res.status(400).json(invalidPatternError(query));
-        }
-    }
-
-    next();
-};
-
-exports.verifySameUser = (req, res, next) => {
-    const { userID } = req.params;
-    const { _id } = req.user;
-
-    if (userID === _id) next();
-    else res.status(403).json({ error: 'User not authorised to make this request.' });
-};
 
 exports.sendFriendRequest = asyncHandler(async (req, res) => {
     // When passport implemented, userID will be obtained from req.user

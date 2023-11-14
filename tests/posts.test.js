@@ -1,6 +1,11 @@
 const request = require('supertest');
 const { POST_CHAR_LIMIT } = require('../controllers/helpers/constants');
-const { notLoggedInError } = require('../controllers/helpers/error_handling');
+const {
+    notLoggedInError,
+    unauthorisedError,
+    notFoundError,
+    invalidPatternError,
+} = require('../controllers/helpers/error_handling');
 
 const app = require('./config/test_server');
 
@@ -204,5 +209,123 @@ describe('Liking wall posts', () => {
         const likedWallRes = await loggedInUser.get(`/users/${userIDs[1]}/posts`);
         const likes = likedWallRes.body[0].likes;
         expect(likes.length).toBe(0);
+    });
+});
+
+describe('Editing wall posts', () => {
+    let postToEdit;
+
+    // Set test post's like count to 1
+    beforeAll(async () => {
+        const wallRes = await loggedInUser.get(`/users/${userIDs[0]}/posts`);
+        postToEdit = wallRes.body[0]._id;
+
+        await loggedInUser.post(`/users/${userIDs[0]}/posts/${postToEdit}/likes`);
+    });
+
+    it("Prevents editing wall posts if the requesting user is not logged in as the post's author", async () => {
+        const rejectRes = await request(app)
+            .put(`/users/${userIDs[0]}/posts/${postToEdit}`)
+            .type('form')
+            .send({ body: 'Edited' });
+        expect(rejectRes.status).toBe(401);
+        expect(rejectRes.body).toEqual(notLoggedInError);
+
+        const rejectRes2 = await loggedInUser1
+            .put(`/users/${userIDs[0]}/posts/${postToEdit}`)
+            .type('form')
+            .send({ body: 'Edited' });
+        expect(rejectRes2.status).toBe(403);
+        expect(rejectRes2.body).toEqual(unauthorisedError);
+    });
+
+    it("Edits a post's body text if logged in as the post's author, retaining like count", async () => {
+        const postRes = await loggedInUser
+            .put(`/users/${userIDs[0]}/posts/${postToEdit}`)
+            .type('form')
+            .send({ body: 'Edited' });
+        expect(postRes.status).toBe(200);
+        expect(postRes.body.isEdited).toBe(true);
+
+        const postsRes = await loggedInUser.get(`/users/${userIDs[0]}/posts`);
+        const likes = postsRes.body[0].likes;
+        expect(likes.length).toBe(1);
+    });
+
+    it(`Prevents an edit if the new post is either empty or over the ${POST_CHAR_LIMIT} character limit`, async () => {
+        const emptyRes = await loggedInUser
+            .put(`/users/${userIDs[0]}/posts/${postToEdit}`)
+            .type('form')
+            .send({ body: '' });
+        expect(emptyRes.status).toBe(400);
+        expect(emptyRes.body).toEqual({ error: 'Post cannot be empty.' });
+
+        const limitRes = await loggedInUser
+            .post(`/users/${userIDs[0]}/posts`)
+            .type('form')
+            .send({ body: 'a'.repeat(POST_CHAR_LIMIT + 1) });
+        expect(limitRes.status).toBe(400);
+        expect(limitRes.body).toEqual({ error: `Max. ${POST_CHAR_LIMIT} characters.` });
+
+        const wallRes = await loggedInUser.get(`/users/${userIDs[0]}/posts`);
+        expect(wallRes.body[0].body).toBe('Edited');
+    });
+
+    it('Returns a 404 if trying to edit a non-existant post', async () => {
+        const editRes = await loggedInUser
+            .put(`/users/${userIDs[0]}/posts/${NONEXISTANT_ID}`)
+            .type('form')
+            .send({ body: 'Not found edited' });
+        expect(editRes.status).toBe(404);
+        expect(editRes.body).toEqual(notFoundError);
+    });
+
+    it('Returns a 400 if editing a post ID that is an invalid objectId', async () => {
+        const editRes = await loggedInUser
+            .put(`/users/${userIDs[0]}/posts/${INVALID_OBJECT_ID}`)
+            .type('form')
+            .send({ body: 'Not found edited' });
+        expect(editRes.status).toBe(400);
+        expect(editRes.body).toEqual(invalidPatternError(INVALID_OBJECT_ID));
+    });
+});
+
+describe('Deleting wall posts', () => {
+    it("Prevents deleting wall posts if the requesting user is not logged in as the post's author", async () => {
+        const rejectRes = await request(app).delete(`/users/${userIDs[0]}/posts/${postIDs[0]}`);
+        expect(rejectRes.status).toBe(401);
+        expect(rejectRes.body).toEqual(notLoggedInError);
+
+        const rejectRes2 = await loggedInUser1.delete(`/users/${userIDs[0]}/posts/${postIDs[0]}`);
+        expect(rejectRes2.status).toBe(403);
+        expect(rejectRes2.body).toEqual(unauthorisedError);
+
+        const wallRes = await loggedInUser.get(`/users/${userIDs[0]}/posts`);
+        expect(wallRes.body.length).toBe(startingPostsOnWall0.length + 1);
+        expect(wallRes.body.find((post) => post._id === postIDs[0])).toBeDefined();
+    });
+
+    it('Returns a 404 if trying to delete a non-existant post', async () => {
+        const deleteRes = await loggedInUser.delete(`/users/${userIDs[0]}/posts/${NONEXISTANT_ID}`);
+        expect(deleteRes.status).toBe(404);
+        expect(deleteRes.body).toEqual(notFoundError);
+    });
+
+    it('Returns a 400 if trying to delete a post ID that is an invalid objectId', async () => {
+        const editRes = await loggedInUser.delete(
+            `/users/${userIDs[0]}/posts/${INVALID_OBJECT_ID}`
+        );
+        expect(editRes.status).toBe(400);
+        expect(editRes.body).toEqual(invalidPatternError(INVALID_OBJECT_ID));
+    });
+
+    it('Deletes a post if requested by the logged in author', async () => {
+        const deleteRes = await loggedInUser.delete(`/users/${userIDs[0]}/posts/${postIDs[0]}`);
+        expect(deleteRes.status).toBe(200);
+        expect(deleteRes.body).toEqual({ message: 'Post deleted.' });
+
+        const wallRes = await loggedInUser.get(`/users/${userIDs[0]}/posts`);
+        expect(wallRes.body.length).toBe(startingPostsOnWall0.length);
+        expect(wallRes.body.find((post) => post._id === postIDs[0])).not.toBeDefined();
     });
 });

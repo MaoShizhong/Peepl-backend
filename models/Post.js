@@ -8,6 +8,7 @@ const PostSchema = new Schema(
         timestamp: { type: Date, required: true },
         body: { type: String, maxLength: POST_CHAR_LIMIT, required: true },
         likes: [{ type: Schema.Types.ObjectId, ref: 'user' }],
+        isEdited: { type: Boolean, default: undefined },
     },
     { versionKey: false }
 );

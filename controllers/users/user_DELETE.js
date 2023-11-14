@@ -19,3 +19,15 @@ exports.unlikePost = asyncHandler(async (req, res) => {
         res.json({ post });
     }
 });
+
+exports.deletePost = asyncHandler(async (req, res) => {
+    const { postID } = req.params;
+
+    const deletedPost = await Post.findByIdAndDelete(postID).exec();
+
+    if (!deletedPost) {
+        res.status(404).json(notFoundError);
+    } else {
+        res.json({ message: 'Post deleted.' });
+    }
+});

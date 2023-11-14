@@ -2,6 +2,8 @@ const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
 const { acceptFriendRequest, rejectFriendRequest } = require('../helpers/friend_requests');
 const { notFoundError } = require('../helpers/error_handling');
+const { validationResult } = require('express-validator');
+const Post = require('../../models/Post');
 
 exports.respondToFriendRequest = asyncHandler(async (req, res) => {
     // ! when passport implemented, get user ID from req.user and verify with param
@@ -39,4 +41,27 @@ exports.respondToFriendRequest = asyncHandler(async (req, res) => {
     }
 
     res.end();
+});
+
+exports.editPost = asyncHandler(async (req, res) => {
+    const { postID } = req.params;
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Send only the first form error back to user
+        const error = errors.array()[0].msg;
+        return res.status(400).json({ error });
+    }
+
+    const editedPost = await Post.findByIdAndUpdate(
+        postID,
+        { body: req.body.body, isEdited: true },
+        { new: true }
+    );
+
+    if (!editedPost) {
+        res.status(404).json(notFoundError);
+    } else {
+        res.json(editedPost);
+    }
 });
