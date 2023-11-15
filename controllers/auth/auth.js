@@ -36,9 +36,9 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
             details: {
                 firstName: firstName,
                 lastName: lastName,
-                'DOB.value': DOB,
-                'city.value': city,
-                'country.value': country,
+                'DOB.value': DOB.value,
+                'city.value': city ? city.value : undefined,
+                'country.value': country ? country.value : undefined,
             },
         });
 

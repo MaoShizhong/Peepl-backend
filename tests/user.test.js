@@ -32,7 +32,7 @@ describe('Login with user', () => {
     });
 });
 
-describe('Get user details/walls', () => {
+describe('Get user details', () => {
     test(`In-memory database has ${STARTING_USER_COUNT} test users loaded on test start`, async () => {
         const res = await loggedInUser.get('/users');
 
@@ -124,16 +124,18 @@ describe('Get user details/walls', () => {
 
 describe('Successful user creation', () => {
     it('Adds new user to the test database if all form fields pass validation', async () => {
-        const postRes = await request(app).post('/auth/users').type('form').send({
-            email: 'new@new.com',
-            password: 'newNEW1234',
-            confirm: 'newNEW1234',
-            firstName: 'NewFirst',
-            lastName: 'NewLast',
-            DOB: '1991-06-11',
-            city: 'Neuerlin',
-            country: 'Germany',
-        });
+        const postRes = await request(app)
+            .post('/auth/users')
+            .send({
+                email: 'new@new.com',
+                password: 'newNEW1234',
+                confirm: 'newNEW1234',
+                firstName: 'NewFirst',
+                lastName: 'NewLast',
+                DOB: { value: '1991-06-11T00:00:00.000Z' },
+                city: { value: 'Neuerlin' },
+                country: { value: 'Germany' },
+            });
         expect(postRes.status).toBe(201);
 
         const getRes = await loggedInUser.get('/users');
@@ -141,19 +143,22 @@ describe('Successful user creation', () => {
         expect(getRes.body.users.length).toBe(STARTING_USER_COUNT + 1);
 
         const newUser = getRes.body.users.at(-1);
+
         expect(newUser).toHaveProperty('name', 'NewFirst NewLast');
         expect(newUser).not.toHaveProperty('password');
     });
 
     it('Adds new user to the test database even if optional form fields are missing', async () => {
-        const postRes = await request(app).post('/auth/users').type('form').send({
-            email: 'new2@new2.com',
-            password: 'newNEW12342',
-            confirm: 'newNEW12342',
-            firstName: 'New2First',
-            lastName: 'New2Last',
-            DOB: '1992-06-11',
-        });
+        const postRes = await request(app)
+            .post('/auth/users')
+            .send({
+                email: 'new2@new2.com',
+                password: 'newNEW12342',
+                confirm: 'newNEW12342',
+                firstName: 'New2First',
+                lastName: 'New2Last',
+                DOB: { value: '1991-06-11T00:00:00.000Z' },
+            });
         expect(postRes.status).toBe(201);
 
         const getRes = await loggedInUser.get('/users');
@@ -175,14 +180,16 @@ describe('Rejecting invalid user creation', () => {
     });
 
     it('Rejects new user submission if the provided email is already in use', async () => {
-        const postRes = await request(app).post('/auth/users').type('form').send({
-            email: users[0].email,
-            password: 'newNEW12342',
-            confirm: 'newNEW12342',
-            firstName: 'NewExistingFirst',
-            lastName: 'NewExistingLast',
-            DOB: '1992-06-11',
-        });
+        const postRes = await request(app)
+            .post('/auth/users')
+            .send({
+                email: users[0].email,
+                password: 'newNEW12342',
+                confirm: 'newNEW12342',
+                firstName: 'NewExistingFirst',
+                lastName: 'NewExistingLast',
+                DOB: { value: '1992-06-11' },
+            });
         expect(postRes.status).toBe(400);
         expect(postRes.body).toEqual({
             error: 'Email already in use.\nIf you have an existing account with this email tied to Github and wish to set a password, please log in and set this in your account settings.',
@@ -190,14 +197,16 @@ describe('Rejecting invalid user creation', () => {
     });
 
     it('Rejects new user submission if DOB results in an age younger than 13 years', async () => {
-        const postRes = await request(app).post('/auth/users').type('form').send({
-            email: 'tooYoung@tooYoung.com',
-            password: 'tooYOUNG13',
-            confirm: 'tooYOUNG13',
-            firstName: 'Too',
-            lastName: 'Young',
-            DOB: '2015-06-11',
-        });
+        const postRes = await request(app)
+            .post('/auth/users')
+            .send({
+                email: 'tooYoung@tooYoung.com',
+                password: 'tooYOUNG13',
+                confirm: 'tooYOUNG13',
+                firstName: 'Too',
+                lastName: 'Young',
+                DOB: { value: '2015-06-11' },
+            });
         expect(postRes.status).toBe(400);
         expect(postRes.body).toEqual({
             error: 'You must be at least 13 years old to sign up to Peepl.',
@@ -205,7 +214,7 @@ describe('Rejecting invalid user creation', () => {
     });
 
     it('Rejects new user submission if required field is missing (lastName)', async () => {
-        const postRes = await request(app).post('/auth/users').type('form').send({
+        const postRes = await request(app).post('/auth/users').send({
             email: 'new3@new3.com',
             password: 'passwordPASSWORD1234',
             confirm: 'passwordPASSWORD1234',
@@ -216,27 +225,31 @@ describe('Rejecting invalid user creation', () => {
     });
 
     it('Rejects new user submission if password does not match constraints', async () => {
-        const postRes = await request(app).post('/auth/users').type('form').send({
-            email: 'new4@new4.com',
-            password: 'password',
-            confirm: 'password',
-            firstName: 'New4First',
-            lastName: 'New4Last',
-            DOB: '1992-06-11',
-        });
+        const postRes = await request(app)
+            .post('/auth/users')
+            .send({
+                email: 'new4@new4.com',
+                password: 'password',
+                confirm: 'password',
+                firstName: 'New4First',
+                lastName: 'New4Last',
+                DOB: { value: '1992-06-11' },
+            });
         expect(postRes.status).toBe(400);
         expect(postRes.body).toEqual({ error: 'Password must follow the listed requirements.' });
     });
 
     it('Rejects new user submission if password fields do not match', async () => {
-        const postRes = await request(app).post('/auth/users').type('form').send({
-            email: 'new5@new.com',
-            password: 'asdfASDF5',
-            confirm: '5FDSAfdsa',
-            firstName: 'New5First',
-            lastName: 'New5Last',
-            DOB: '1992-06-11',
-        });
+        const postRes = await request(app)
+            .post('/auth/users')
+            .send({
+                email: 'new5@new.com',
+                password: 'asdfASDF5',
+                confirm: '5FDSAfdsa',
+                firstName: 'New5First',
+                lastName: 'New5Last',
+                DOB: { value: '1992-06-11' },
+            });
         expect(postRes.status).toBe(400);
         expect(postRes.body).toEqual({ error: 'Passwords must match.' });
     });

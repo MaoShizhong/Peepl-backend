@@ -100,6 +100,7 @@ const userFormValidators = {
         .withMessage(
             'Each employment entry must contain a job title, company and start date. End date may be left blank if ongoing.'
         ),
+
     visibility: body(
         'DOB.visibility',
         'Date of birth visibility must either be "everyone", "friends" or "hidden".'
