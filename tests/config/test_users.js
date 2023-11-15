@@ -174,4 +174,47 @@ exports.users = [
         },
         friends: [],
     },
+    {
+        _id: userIDs[4],
+        handle: generateUsername('-', 6),
+        email: 'edit@edit.com',
+        auth: { strategies: ['local'], password: 'asdfASDF3' },
+        details: {
+            firstName: 'FirstEdit',
+            lastName: 'LastEdit',
+            DOB: {
+                value: '1995-12-17T03:20:00.000Z',
+                visibility: 'everyone',
+            },
+            city: {
+                value: 'Editcity',
+                visibility: 'everyone',
+            },
+            country: {
+                value: 'Editcountry',
+                visibility: 'everyone',
+            },
+            employment: {
+                value: [
+                    {
+                        title: 'Editor',
+                        company: 'Edit Ltd',
+                        start: '2015-12-17T03:23:00.000Z',
+                    },
+                ],
+                visibility: 'everyone',
+            },
+            education: {
+                value: [
+                    {
+                        institution: 'Edit Secondary School',
+                        start: '2000-12-17T03:23:00.000Z',
+                        end: '2015-12-17T03:23:00.000Z',
+                    },
+                ],
+                visibility: 'everyone',
+            },
+        },
+        friends: [],
+    },
 ];

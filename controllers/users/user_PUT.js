@@ -1,6 +1,10 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
 const { acceptFriendRequest, rejectFriendRequest } = require('../helpers/friend_requests');
+const {
+    editDetailsFields,
+    editDetailsFieldsTheHaveSubfields,
+} = require('../validation/form_validation');
 const { notFoundError } = require('../helpers/error_handling');
 const { validationResult } = require('express-validator');
 const Post = require('../../models/Post');
@@ -63,5 +67,41 @@ exports.editPost = asyncHandler(async (req, res) => {
         res.status(404).json(notFoundError);
     } else {
         res.json(editedPost);
+    }
+});
+
+exports.editDetail = asyncHandler(async (req, res) => {
+    const { _id } = req.user;
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Send only the first form error back to user
+        const error = errors.array()[0].msg;
+        return res.status(400).json({ error });
+    }
+
+    // set up update document
+    const newUserDetails = { details: {} };
+    editDetailsFields.forEach((field) => {
+        if (field === 'handle' || field === 'email') {
+            newUserDetails[field] = req.body[field];
+        } else if (field === 'firstName' || field === 'lastName') {
+            newUserDetails.details[field] = req.body[field];
+        } else {
+            const [fieldName, subField] = field.split('.');
+            newUserDetails.details[field] = req.body[fieldName][subField];
+        }
+    });
+    editDetailsFieldsTheHaveSubfields.forEach((field) => {
+        const [fieldName, subField] = field.split('.');
+        newUserDetails.details[field] = req.body[fieldName][subField];
+    });
+
+    const updatedUser = await User.findByIdAndUpdate(_id, newUserDetails, { new: true }).exec();
+
+    if (!updatedUser) {
+        res.status(404).json(notFoundError);
+    } else {
+        res.json(updatedUser);
     }
 });

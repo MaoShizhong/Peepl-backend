@@ -1,5 +1,6 @@
 const { Router } = require('express');
-const { validateSignupLocal, addNewUserLocal, login } = require('../controllers/auth/auth');
+const { addNewUserLocal, login } = require('../controllers/auth/auth');
+const { validateSignupLocal } = require('../controllers/validation/form_validation');
 const passport = require('passport');
 
 const authRouter = Router();

@@ -7,4 +7,13 @@ module.exports = {
     },
     extends: ['eslint:recommended'],
     root: true,
+    rules: {
+        'no-unused-vars': [
+            'error',
+            {
+                varsIgnorePattern: '^_',
+                argsIgnorePattern: '^_',
+            },
+        ],
+    },
 };

@@ -1,56 +1,8 @@
 const asyncHandler = require('express-async-handler');
-const { body, validationResult } = require('express-validator');
+const { validationResult } = require('express-validator');
 const argon2 = require('argon2');
 const User = require('../../models/User');
 const { generateUsername } = require('unique-username-generator');
-
-const AGE_LIMIT = 13;
-
-// All form fields will be end up flagging as an error if not a string
-exports.validateSignupLocal = [
-    body('email', 'Email must be a valid email format.')
-        .isEmail()
-        .custom(async (email) => {
-            const existingUser = await User.exists({ email: email }).exec();
-            if (existingUser) throw new Error('E-mail already in use');
-        })
-        .withMessage(
-            'Email already in use.\nIf you have an existing account with this email tied to Github and wish to set a password, please log in and set this in your account settings.'
-        ),
-
-    body('password', 'Password must follow the listed requirements.').isStrongPassword({
-        minLength: 8,
-        minLowercase: 1,
-        minUppercase: 1,
-        minNumbers: 1,
-        minSymbols: 0,
-    }),
-
-    body('confirm', 'Passwords must match.').custom(
-        (confirm, { req }) => confirm === req.body.password
-    ),
-
-    body('firstName', 'First name must be provided.').notEmpty(),
-
-    body('lastName', 'Last name must be provided.').notEmpty(),
-
-    body('DOB', 'Date of birth must be provided.')
-        .isDate()
-        .custom((value) => {
-            const now = new Date(Date.now());
-            const currentYear = now.getFullYear();
-            const thirteenYearsAgo = now.setFullYear(currentYear - AGE_LIMIT);
-
-            const dob = new Date(value);
-
-            return dob < thirteenYearsAgo;
-        })
-        .withMessage('You must be at least 13 years old to sign up to Peepl.'),
-
-    body('city').optional(),
-
-    body('country').optional().isString(),
-];
 
 exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);

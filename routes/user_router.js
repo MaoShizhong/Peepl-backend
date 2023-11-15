@@ -3,20 +3,24 @@ const { checkAuthenticated } = require('../controllers/auth/auth');
 const {
     getAllUsers,
     getSpecificUser,
+    editDetail,
     getWall,
     getUserFriendsList,
-    validateObjectIDs,
-    validateFriendQueryObjectIDs,
     validatePostForm,
     writePostToWall,
     likePost,
     unlikePost,
-    verifySameUser,
     sendFriendRequest,
     respondToFriendRequest,
     editPost,
     deletePost,
 } = require('../controllers/users/user');
+const { validateEditDetails } = require('../controllers/validation/form_validation');
+const {
+    validateObjectIDs,
+    validateFriendQueryObjectIDs,
+    verifySameUser,
+} = require('../controllers/validation/user_verify');
 
 const userRouter = Router();
 
@@ -39,6 +43,11 @@ userRouter.use('/:userID/posts/:postID', validateObjectIDs);
 */
 userRouter.get('/', getAllUsers);
 userRouter.get('/:userID', getSpecificUser);
+
+/*
+    Account details
+*/
+userRouter.put('/:userID', verifySameUser, validateEditDetails, editDetail);
 
 /*
     Wall and posts
