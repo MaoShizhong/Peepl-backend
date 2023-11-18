@@ -5,10 +5,11 @@ const app = require('./config/test_server');
 
 const { users } = require('./config/test_users');
 const { friendUsers } = require('./config/test_friends');
+const { feedUsers } = require('./config/test_feedusers')
 
 const userIDs = users.map((user) => user._id.valueOf());
 
-const STARTING_USER_COUNT = users.length + friendUsers.length;
+const STARTING_USER_COUNT = users.length + friendUsers.length + feedUsers.length;
 const NONEXISTANT_ID = '65269890203feea7cca8826b';
 const INVALID_OBJECT_ID = 'foobar';
 

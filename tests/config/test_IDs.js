@@ -12,6 +12,7 @@ module.exports = {
         '65218ac5dc04264ac8a44907',
         '65218ac5dc04264ac8a44919',
     ],
+    feedUserIDs: ['65218ac5dc04264ac8a44419', '65218ac5dc04264ac3a44919','65218ac5dc04264ac3a44911'],
     postIDs: [
         '65218ac99fdd95b5505e56f9',
         '65218b1cdf64387e57489053',

@@ -7,6 +7,7 @@ const {
     editEducation,
     editEmployment,
     getWall,
+    getFeed,
     getUserFriendsList,
     validatePostForm,
     writePostToWall,
@@ -60,6 +61,7 @@ userRouter.put('/:userID/employment', verifySameUser, validateEditEmployment, ed
 /*
     Wall and posts
 */
+userRouter.get('/:userID/feed', verifySameUser, getFeed);
 userRouter.get('/:userID/posts', getWall);
 userRouter.post('/:userID/posts', validatePostForm, writePostToWall);
 userRouter.post('/:userID/posts/:postID/likes', likePost);

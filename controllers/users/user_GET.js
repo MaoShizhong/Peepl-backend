@@ -3,6 +3,7 @@ const { ObjectId } = require('mongoose').Types;
 const User = require('../../models/User');
 const Post = require('../../models/Post');
 const { notFoundError } = require('../helpers/error_handling');
+const { FEED_POSTS_PER_PAGE } = require('../helpers/constants');
 
 exports.getAllUsers = asyncHandler(async (req, res) => {
     let { search } = req.query;
@@ -118,4 +119,24 @@ exports.getWall = asyncHandler(async (req, res) => {
         .exec();
 
     res.json(wallPosts);
+});
+
+exports.getFeed = asyncHandler(async (req, res) => {
+    const { _id } = req.user;
+    const { page } = req.query;
+
+    const postsToSkip = FEED_POSTS_PER_PAGE * ((page ?? 1) - 1);
+
+    const user = await User.findById(_id).select('friends').exec();
+    const friends = user.friends.map((friend) => friend.user);
+
+    const feedPosts = await Post.find({
+        $and: [{ author: { $in: [...friends, _id] } }, { $expr: { $eq: ['$author', '$wall'] } }],
+    })
+        .skip(postsToSkip)
+        .limit(FEED_POSTS_PER_PAGE)
+        .sort({ timestamp: -1 })
+        .exec();
+
+    res.json(feedPosts);
 });

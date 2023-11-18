@@ -1,4 +1,10 @@
-const { getAllUsers, getSpecificUser, getWall, getUserFriendsList } = require('./user_GET');
+const {
+    getAllUsers,
+    getSpecificUser,
+    getWall,
+    getUserFriendsList,
+    getFeed,
+} = require('./user_GET');
 const { sendFriendRequest, validatePostForm, writePostToWall, likePost } = require('./user_POST');
 const {
     respondToFriendRequest,
@@ -18,6 +24,7 @@ module.exports = {
     editEducation,
     editEmployment,
     getWall,
+    getFeed,
     getUserFriendsList,
     validatePostForm,
     writePostToWall,

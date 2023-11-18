@@ -1,5 +1,6 @@
 const { users } = require('./test_users');
 const { friendUsers } = require('./test_friends');
+const { feedUsers, feedPosts } = require('./test_feedusers');
 const { posts } = require('./test_posts');
 const { comments } = require('./test_comments');
 const User = require('../../models/User');
@@ -41,13 +42,20 @@ beforeAll(async () => {
             return new User(clonedUser);
         })
     );
+    const FeedUsers = await Promise.all(
+        feedUsers.map(async (user) => {
+            const clonedUser = structuredClone(user); // change object reference
+            clonedUser.auth.password = await argon2.hash(clonedUser.auth.password);
+            return new User(clonedUser);
+        })
+    );
     const Posts = posts.map((post) => new Post(post));
+    const FeedPosts = feedPosts.map((post) => new Post(post));
     const Comments = comments.map((comment) => new Comment(comment));
 
     await Promise.all([
-        User.insertMany(Users),
-        User.insertMany(FriendUsers),
-        Post.insertMany(Posts),
+        User.insertMany([...Users, ...FriendUsers, ...FeedUsers]),
+        Post.insertMany([...Posts, ...FeedPosts]),
         Comment.insertMany(Comments),
     ]);
 });
