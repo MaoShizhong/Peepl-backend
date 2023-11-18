@@ -4,6 +4,8 @@ const {
     getAllUsers,
     getSpecificUser,
     editDetail,
+    editEducation,
+    editEmployment,
     getWall,
     getUserFriendsList,
     validatePostForm,
@@ -15,7 +17,11 @@ const {
     editPost,
     deletePost,
 } = require('../controllers/users/user');
-const { validateEditDetails } = require('../controllers/validation/form_validation');
+const {
+    validateEditDetails,
+    validateEditEducation,
+    validateEditEmployment,
+} = require('../controllers/validation/form_validation');
 const {
     validateObjectIDs,
     validateFriendQueryObjectIDs,
@@ -48,6 +54,8 @@ userRouter.get('/:userID', getSpecificUser);
     Account details
 */
 userRouter.put('/:userID', verifySameUser, validateEditDetails, editDetail);
+userRouter.put('/:userID/education', verifySameUser, validateEditEducation, editEducation);
+userRouter.put('/:userID/employment', verifySameUser, validateEditEmployment, editEmployment);
 
 /*
     Wall and posts

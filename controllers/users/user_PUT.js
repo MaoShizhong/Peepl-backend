@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
 const { acceptFriendRequest, rejectFriendRequest } = require('../helpers/friend_requests');
+const { sortByEndDescendingThenStartDescending } = require('../helpers/sort');
 const {
     editDetailsFields,
     editDetailsFieldsTheHaveSubfields,
@@ -104,4 +105,54 @@ exports.editDetail = asyncHandler(async (req, res) => {
     } else {
         res.json(updatedUser);
     }
+});
+
+exports.editEducation = asyncHandler(async (req, res) => {
+    const { education } = req.body;
+    const { _id } = req.user;
+
+    education.value.sort(sortByEndDescendingThenStartDescending);
+
+    const updatedUser = await User.findByIdAndUpdate(
+        _id,
+        {
+            'details.education.value': education.value,
+            'details.education.visibility': education.visibility,
+        },
+        { new: true }
+    )
+        .select('details.education')
+        .exec();
+
+    const updatedEducation = updatedUser.details.education;
+
+    res.json({
+        education: updatedEducation.value,
+        visibility: updatedEducation.visibility,
+    });
+});
+
+exports.editEmployment = asyncHandler(async (req, res) => {
+    const { employment } = req.body;
+    const { _id } = req.user;
+
+    employment.value.sort(sortByEndDescendingThenStartDescending);
+
+    const updatedUser = await User.findByIdAndUpdate(
+        _id,
+        {
+            'details.employment.value': employment.value,
+            'details.employment.visibility': employment.visibility,
+        },
+        { new: true }
+    )
+        .select('details.employment')
+        .exec();
+
+    const updatedEmployment = updatedUser.details.employment;
+
+    res.json({
+        employment: updatedEmployment.value,
+        visibility: updatedEmployment.visibility,
+    });
 });

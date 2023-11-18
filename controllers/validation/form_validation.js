@@ -65,17 +65,20 @@ const userFormValidators = {
 
     'country.value': body('country.value').optional().isString(),
 
-    education: body('education')
+    'education.value': body('education.value')
         .isArray()
         .withMessage('Education field must be an array.')
         .custom((array) =>
-            array.every((object) => {
+            // noSQL injection protection
+            array.every((entry) => {
                 const requiredFields = ['institution', 'start', 'end'];
-                const objectFields = Object.keys(object);
+                const objectFields = Object.keys(entry);
+                const objectValues = Object.values(entry);
 
                 return (
                     objectFields.length === requiredFields.length &&
-                    objectFields.every((field) => requiredFields.includes(field))
+                    objectFields.every((field) => requiredFields.includes(field)) &&
+                    objectValues.every((value) => value === null || typeof value === 'string')
                 );
             })
         )
@@ -83,17 +86,20 @@ const userFormValidators = {
             'Each education entry must contain an institution and start date. End date may be left blank if ongoing.'
         ),
 
-    employment: body('employment')
+    'employment.value': body('employment.value')
         .isArray()
         .withMessage('Employment field must be an array.')
         .custom((array) =>
-            array.every((object) => {
+            // noSQL injection protection
+            array.every((entry) => {
                 const requiredFields = ['title', 'company', 'start', 'end'];
-                const objectFields = Object.keys(object);
+                const objectFields = Object.keys(entry);
+                const objectValues = Object.values(entry);
 
                 return (
                     objectFields.length === requiredFields.length &&
-                    objectFields.every((field) => requiredFields.includes(field))
+                    objectFields.every((field) => requiredFields.includes(field)) &&
+                    objectValues.every((value) => value === null || typeof value === 'string')
                 );
             })
         )
@@ -141,5 +147,15 @@ exports.validateSignupLocal = signupFieldsLocal.map((field) => userFormValidator
 
 exports.validateEditDetails = [
     ...editDetailsFields.map((field) => userFormValidators[field]),
+    userFormValidators.visibility,
+];
+
+exports.validateEditEducation = [
+    userFormValidators['education.value'],
+    userFormValidators.visibility,
+];
+
+exports.validateEditEmployment = [
+    userFormValidators['employment.value'],
     userFormValidators.visibility,
 ];

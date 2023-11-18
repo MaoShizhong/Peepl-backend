@@ -200,6 +200,7 @@ exports.users = [
                         title: 'Editor',
                         company: 'Edit Ltd',
                         start: '2015-12-17T03:23:00.000Z',
+                        end: null
                     },
                 ],
                 visibility: 'everyone',
