@@ -1,6 +1,53 @@
-const { AGE_LIMIT } = require('../helpers/constants');
+const { IMAGE_UPLOAD_SIZE_LIMIT, AGE_LIMIT } = require('../helpers/constants');
 const { body } = require('express-validator');
 const User = require('../../models/User');
+const multer = require('multer');
+const { fromFile: checkFileType } = require('file-type');
+const { rmSync } = require('fs');
+
+// If no image file submitted, multer will do nothing and simply call next()
+exports.handleImageFile = (imageFormField) => {
+    return (req, res, next) => {
+        const separateImageFileToTempStorage = multer({
+            dest: 'images/temp',
+            limits: { fileSize: IMAGE_UPLOAD_SIZE_LIMIT },
+        }).single(imageFormField);
+
+        /*
+            If multer detects a file attachment, it will validate it then split
+            the form body so the file goes into req.file and the rest of the form
+            into req.body
+        */
+        separateImageFileToTempStorage(req, res, async (err) => {
+            if (!err && !req.file) {
+                return next();
+            } else if (err instanceof multer.MulterError) {
+                return res.status(400).json({ error: err.message });
+            } else if (err) {
+                return res.status(500).json({
+                    error: 'Unknown error occurred during file upload. Please try again later.',
+                });
+            }
+
+            // - only allow png/jpe?g/webp images - must detect by file magic number
+            // - not naive ext/MIME type as this can easily be changed by the user before upload
+            // - 'jpg' considered 'jpeg' by file-type-checker
+            const validMimes = ['image/png', 'image/jpeg', 'image/webp'];
+
+            const fileType = await checkFileType(`${process.cwd()}/${req.file.path}`);
+
+            if (!fileType || !validMimes.includes(fileType.mime)) {
+                rmSync(`${process.cwd()}/${req.file.path}`);
+
+                res.status(400).json({
+                    error: 'Invalid file type. Only PNG/JPG/JPEG/WEBP images allowed.',
+                });
+            } else {
+                next();
+            }
+        });
+    };
+};
 
 const userFormValidators = {
     handle: body('handle')

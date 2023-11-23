@@ -48,6 +48,7 @@ const UserSchema = new Schema(
     {
         handle: { type: String, unique: true, required: true },
         email: { type: String, unique: true, required: true },
+        profilePicture: { type: String, default: null },
         auth: {
             strategies: [{ type: String, enum: ['local', 'github'] }],
             password: {

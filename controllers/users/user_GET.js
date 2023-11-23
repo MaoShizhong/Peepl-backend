@@ -17,12 +17,13 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
             { 'details.lastName': { $regex: searchRegex } },
         ],
     })
-        .select(['details.firstName', 'details.lastName'])
+        .select(['profilePicture', 'details.firstName', 'details.lastName'])
         .exec();
 
     const allUsersWithNames = allUsers.map((user) => {
         return {
             _id: user._id,
+            profilePicture: user.profilePicture,
             name: `${user.details.firstName} ${user.details.lastName}`,
         };
     });
@@ -52,6 +53,7 @@ exports.getSpecificUser = asyncHandler(async (req, res) => {
             $project: {
                 _id: 0,
                 handle: 1,
+                profilePicture: 1,
                 'details.firstName': 1,
                 'details.lastName': 1,
                 'details.DOB': removeFieldIfShouldHide('$details.DOB'),
@@ -73,6 +75,7 @@ exports.getSpecificUser = asyncHandler(async (req, res) => {
         res.json({
             _id: user._id,
             handle: user.handle,
+            profilePicture: user.profilePicture,
             name: `${firstName} ${lastName}`,
             ...hideableDetails,
         });

@@ -2,10 +2,11 @@ const request = require('supertest');
 const { invalidPatternError, notFoundError } = require('../controllers/helpers/error_handling');
 
 const app = require('./config/test_server');
+const { cloudinary } = require('../cloudinary/cloudinary');
 
 const { users } = require('./config/test_users');
 const { friendUsers } = require('./config/test_friends');
-const { feedUsers } = require('./config/test_feedusers')
+const { feedUsers } = require('./config/test_feedusers');
 
 const userIDs = users.map((user) => user._id.valueOf());
 
@@ -14,6 +15,22 @@ const NONEXISTANT_ID = '65269890203feea7cca8826b';
 const INVALID_OBJECT_ID = 'foobar';
 
 const loggedInUser = request.agent(app);
+
+let newUserCloudinaryImage;
+
+const saveProfilePictureInfoForDeletionAfterTest = (url) => {
+    const relevantFields = url.split('/').slice(-2);
+    const _id = relevantFields[0];
+    const public_id = relevantFields[1].slice(0, -5);
+
+    newUserCloudinaryImage = { folder: _id, public_id: public_id };
+};
+
+// Cleanup test uploads from cloudinary database
+afterAll(async () => {
+    await cloudinary.api.delete_resources_by_prefix(newUserCloudinaryImage.folder);
+    await cloudinary.api.delete_folder(newUserCloudinaryImage.folder);
+});
 
 describe('Login with user', () => {
     it('Logs a user in with the credentials via local strategy', async () => {
@@ -41,12 +58,12 @@ describe('Get user details', () => {
         expect(res.body.users.length).toBe(STARTING_USER_COUNT);
     });
 
-    it('Returns only _id and full names when getting all users', async () => {
+    it('Returns only _id, full names and profile picture URL (null) when getting all users', async () => {
         const containsOnlyExpectedProperties = (user) => {
             const properties = Object.getOwnPropertyNames(user);
-            const expectedProperties = ['_id', 'name'];
+            const expectedProperties = ['_id', 'name', 'profilePicture'];
 
-            return JSON.stringify(properties) === JSON.stringify(expectedProperties);
+            return properties.every((property) => expectedProperties.includes(property));
         };
 
         const res = await loggedInUser.get('/users');
@@ -87,6 +104,7 @@ describe('Get user details', () => {
             country: details.country.value,
             employment: details.employment.value,
             education: details.education.value,
+            profilePicture: null,
         });
     });
 
@@ -105,7 +123,9 @@ describe('Get user details', () => {
         const res = await loggedInUser.get(`/users/${userIDs[3]}`);
 
         expect(res.status).toBe(200);
-        expect(Object.getOwnPropertyNames(res.body)).toEqual(['handle', 'name']);
+        expect(Object.getOwnPropertyNames(res.body).sort()).toEqual(
+            ['handle', 'name', 'profilePicture'].sort()
+        );
         expect(res.body.name).toBe(`${details.firstName} ${details.lastName}`);
         expect(containsHiddenDetails(res.body)).toBe(false);
     });
@@ -124,19 +144,29 @@ describe('Get user details', () => {
 });
 
 describe('Successful user creation', () => {
+    const form = {
+        email: 'new@new.com',
+        password: 'newNEW1234',
+        confirm: 'newNEW1234',
+        firstName: 'NewFirst',
+        lastName: 'NewLast',
+        'DOB.value': '1991-06-11T00:00:00.000Z',
+        'city.value': 'Neuerlin',
+        'country.value': 'Germany',
+    };
+
     it('Adds new user to the test database if all form fields pass validation', async () => {
         const postRes = await request(app)
             .post('/auth/users')
-            .send({
-                email: 'new@new.com',
-                password: 'newNEW1234',
-                confirm: 'newNEW1234',
-                firstName: 'NewFirst',
-                lastName: 'NewLast',
-                DOB: { value: '1991-06-11T00:00:00.000Z' },
-                city: { value: 'Neuerlin' },
-                country: { value: 'Germany' },
-            });
+            .field('email', form.email)
+            .field('password', form.password)
+            .field('confirm', form.confirm)
+            .field('firstName', form.firstName)
+            .field('lastName', form.lastName)
+            .field('DOB.value', form['DOB.value'])
+            .field('city.value', form['city.value'])
+            .field('country.value', form['country.value'])
+            .attach('profilePicture', `${__dirname}/images/test.png`);
         expect(postRes.status).toBe(201);
 
         const getRes = await loggedInUser.get('/users');
@@ -146,20 +176,21 @@ describe('Successful user creation', () => {
         const newUser = getRes.body.users.at(-1);
 
         expect(newUser).toHaveProperty('name', 'NewFirst NewLast');
+        expect(newUser).toHaveProperty('profilePicture');
         expect(newUser).not.toHaveProperty('password');
-    });
+
+        saveProfilePictureInfoForDeletionAfterTest(newUser.profilePicture);
+    }, 10000);
 
     it('Adds new user to the test database even if optional form fields are missing', async () => {
         const postRes = await request(app)
             .post('/auth/users')
-            .send({
-                email: 'new2@new2.com',
-                password: 'newNEW12342',
-                confirm: 'newNEW12342',
-                firstName: 'New2First',
-                lastName: 'New2Last',
-                DOB: { value: '1991-06-11T00:00:00.000Z' },
-            });
+            .field('email', 'new2@new2.com')
+            .field('password', form.password)
+            .field('confirm', form.confirm)
+            .field('firstName', form.firstName)
+            .field('lastName', form.lastName)
+            .field('DOB.value', '1991-06-11T00:00:00.000Z');
         expect(postRes.status).toBe(201);
 
         const getRes = await loggedInUser.get('/users');
@@ -167,7 +198,8 @@ describe('Successful user creation', () => {
         expect(getRes.body.users.length).toBe(STARTING_USER_COUNT + 2);
 
         const newUser = getRes.body.users.at(-1);
-        expect(newUser).toHaveProperty('name', 'New2First New2Last');
+        expect(newUser).toHaveProperty('name', `${form.firstName} ${form.lastName}`);
+        expect(newUser).toHaveProperty('profilePicture', null);
         expect(newUser).not.toHaveProperty('password');
         expect(newUser).not.toHaveProperty('city');
         expect(newUser).not.toHaveProperty('country');
@@ -180,17 +212,25 @@ describe('Rejecting invalid user creation', () => {
         expect(getRes.body.users.length).toBe(STARTING_USER_COUNT + 2);
     });
 
+    const invalidForm = {
+        email: 'invalid@invalid.com',
+        password: 'newNEW1234',
+        confirm: 'newNEW1234',
+        firstName: 'NewFirst',
+        lastName: 'NewLast',
+        'DOB.value': '1991-06-11T00:00:00.000Z',
+    };
+
     it('Rejects new user submission if the provided email is already in use', async () => {
         const postRes = await request(app)
             .post('/auth/users')
-            .send({
-                email: users[0].email,
-                password: 'newNEW12342',
-                confirm: 'newNEW12342',
-                firstName: 'NewExistingFirst',
-                lastName: 'NewExistingLast',
-                DOB: { value: '1992-06-11' },
-            });
+            .field('email', users[0].email)
+            .field('password', invalidForm.password)
+            .field('confirm', invalidForm.confirm)
+            .field('firstName', invalidForm.firstName)
+            .field('lastName', invalidForm.lastName)
+            .field('DOB.value', invalidForm['DOB.value']);
+
         expect(postRes.status).toBe(400);
         expect(postRes.body).toEqual({
             error: 'Email already in use.\nIf you have an existing account with this email tied to Github and wish to set a password, please log in and set this in your account settings.',
@@ -200,14 +240,13 @@ describe('Rejecting invalid user creation', () => {
     it('Rejects new user submission if DOB results in an age younger than 13 years', async () => {
         const postRes = await request(app)
             .post('/auth/users')
-            .send({
-                email: 'tooYoung@tooYoung.com',
-                password: 'tooYOUNG13',
-                confirm: 'tooYOUNG13',
-                firstName: 'Too',
-                lastName: 'Young',
-                DOB: { value: '2015-06-11' },
-            });
+            .field('email', invalidForm.email)
+            .field('password', invalidForm.password)
+            .field('confirm', invalidForm.confirm)
+            .field('firstName', invalidForm.firstName)
+            .field('lastName', invalidForm.lastName)
+            .field('DOB.value', '2015-06-11');
+
         expect(postRes.status).toBe(400);
         expect(postRes.body).toEqual({
             error: 'You must be at least 13 years old to sign up to Peepl.',
@@ -215,12 +254,14 @@ describe('Rejecting invalid user creation', () => {
     });
 
     it('Rejects new user submission if required field is missing (lastName)', async () => {
-        const postRes = await request(app).post('/auth/users').send({
-            email: 'new3@new3.com',
-            password: 'passwordPASSWORD1234',
-            confirm: 'passwordPASSWORD1234',
-            firstName: 'New3First',
-        });
+        const postRes = await request(app)
+            .post('/auth/users')
+            .field('email', invalidForm.email)
+            .field('password', invalidForm.password)
+            .field('confirm', invalidForm.confirm)
+            .field('firstName', invalidForm.firstName)
+            .field('DOB.value', invalidForm['DOB.value']);
+
         expect(postRes.status).toBe(400);
         expect(postRes.body).toEqual({ error: 'Last name must be provided.' });
     });
@@ -228,14 +269,13 @@ describe('Rejecting invalid user creation', () => {
     it('Rejects new user submission if password does not match constraints', async () => {
         const postRes = await request(app)
             .post('/auth/users')
-            .send({
-                email: 'new4@new4.com',
-                password: 'password',
-                confirm: 'password',
-                firstName: 'New4First',
-                lastName: 'New4Last',
-                DOB: { value: '1992-06-11' },
-            });
+            .field('email', invalidForm.email)
+            .field('password', 'password')
+            .field('confirm', 'password')
+            .field('firstName', invalidForm.firstName)
+            .field('lastName', invalidForm.lastName)
+            .field('DOB.value', invalidForm['DOB.value']);
+
         expect(postRes.status).toBe(400);
         expect(postRes.body).toEqual({ error: 'Password must follow the listed requirements.' });
     });
@@ -243,15 +283,63 @@ describe('Rejecting invalid user creation', () => {
     it('Rejects new user submission if password fields do not match', async () => {
         const postRes = await request(app)
             .post('/auth/users')
-            .send({
-                email: 'new5@new.com',
-                password: 'asdfASDF5',
-                confirm: '5FDSAfdsa',
-                firstName: 'New5First',
-                lastName: 'New5Last',
-                DOB: { value: '1992-06-11' },
-            });
+            .field('email', invalidForm.email)
+            .field('password', invalidForm.password)
+            .field('confirm', 'password')
+            .field('firstName', invalidForm.firstName)
+            .field('lastName', invalidForm.lastName)
+            .field('DOB.value', invalidForm['DOB.value']);
+
         expect(postRes.status).toBe(400);
         expect(postRes.body).toEqual({ error: 'Passwords must match.' });
+    });
+
+    it('Rejects new user submission if profile picture file attachment exceeds 8 MiB limit', async () => {
+        const postRes = await request(app)
+            .post('/auth/users')
+            .field('email', invalidForm.email)
+            .field('password', invalidForm.password)
+            .field('confirm', invalidForm.password)
+            .field('firstName', invalidForm.firstName)
+            .field('lastName', invalidForm.lastName)
+            .field('DOB.value', invalidForm['DOB.value'])
+            .attach('profilePicture', `${__dirname}/images/too_big.png`);
+
+        expect(postRes.status).toBe(400);
+        expect(postRes.body).toEqual({ error: 'File too large' });
+    });
+
+    it('Rejects profile picture file attachment if not a png/jpg/jpeg/webp', async () => {
+        const postRes = await request(app)
+            .post('/auth/users')
+            .field('email', invalidForm.email)
+            .field('password', invalidForm.password)
+            .field('confirm', invalidForm.password)
+            .field('firstName', invalidForm.firstName)
+            .field('lastName', invalidForm.lastName)
+            .field('DOB.value', invalidForm['DOB.value'])
+            .attach('profilePicture', `${__dirname}/images/wrong_type.txt`);
+
+        expect(postRes.status).toBe(400);
+        expect(postRes.body).toEqual({
+            error: 'Invalid file type. Only PNG/JPG/JPEG/WEBP images allowed.',
+        });
+    });
+
+    it('Validates file type by magic number, rejecting a renamed invalid file even if extension/MIME type is valid', async () => {
+        const postRes = await request(app)
+            .post('/auth/users')
+            .field('email', invalidForm.email)
+            .field('password', invalidForm.password)
+            .field('confirm', invalidForm.password)
+            .field('firstName', invalidForm.firstName)
+            .field('lastName', invalidForm.lastName)
+            .field('DOB.value', invalidForm['DOB.value'])
+            .attach('profilePicture', `${__dirname}/images/wrong_type_rename.png`);
+
+        expect(postRes.status).toBe(400);
+        expect(postRes.body).toEqual({
+            error: 'Invalid file type. Only PNG/JPG/JPEG/WEBP images allowed.',
+        });
     });
 });
