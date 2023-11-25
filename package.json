@@ -5,7 +5,7 @@
     "scripts": {
         "start": "node ./app.js",
         "dev": "nodemon ./app.js",
-        "tests": "jest --watch ./tests/*.test.js --detectOpenHandles"
+        "tests": "jest --watch ./tests/images.test.js --detectOpenHandles"
     },
     "dependencies": {
         "argon2": "^0.31.2",

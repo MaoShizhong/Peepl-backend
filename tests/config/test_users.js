@@ -178,7 +178,7 @@ exports.users = [
         _id: userIDs[4],
         handle: generateUsername('-', 6),
         email: 'edit@edit.com',
-        auth: { strategies: ['local'], password: 'asdfASDF3' },
+        auth: { strategies: ['local'], password: 'asdfASDF4' },
         details: {
             firstName: 'FirstEdit',
             lastName: 'LastEdit',
@@ -209,6 +209,50 @@ exports.users = [
                 value: [
                     {
                         institution: 'Edit Secondary School',
+                        start: '2000-12-17T03:23:00.000Z',
+                        end: '2015-12-17T03:23:00.000Z',
+                    },
+                ],
+                visibility: 'everyone',
+            },
+        },
+        friends: [],
+    },
+    {
+        _id: userIDs[5],
+        handle: generateUsername('-', 6),
+        email: 'image@image.com',
+        auth: { strategies: ['local'], password: 'asdfASDF5' },
+        details: {
+            firstName: 'FirstImage',
+            lastName: 'LastImage',
+            DOB: {
+                value: '1995-12-17T03:20:00.000Z',
+                visibility: 'everyone',
+            },
+            city: {
+                value: 'Imagecity',
+                visibility: 'everyone',
+            },
+            country: {
+                value: 'Imagecountry',
+                visibility: 'everyone',
+            },
+            employment: {
+                value: [
+                    {
+                        title: 'Imager',
+                        company: 'Image Ltd',
+                        start: '2015-12-17T03:23:00.000Z',
+                        end: null
+                    },
+                ],
+                visibility: 'everyone',
+            },
+            education: {
+                value: [
+                    {
+                        institution: 'Image Secondary School',
                         start: '2000-12-17T03:23:00.000Z',
                         end: '2015-12-17T03:23:00.000Z',
                     },

@@ -5,6 +5,7 @@ module.exports = {
         '65218ac5dc04264ac8a44906',
         '65218ac5dc04264ac8a44918',
         '65218ac5dc04264ac8a4491c',
+        '65218ac5dc04264ac8a44926',
     ],
     friendUserIDs: [
         '65218a70437ced46f36858d9',
