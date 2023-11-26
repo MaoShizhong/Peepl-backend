@@ -6,6 +6,7 @@ const {
     editDetail,
     editEducation,
     editEmployment,
+    changeProfilePicture,
     getWall,
     getFeed,
     getUserFriendsList,
@@ -19,6 +20,7 @@ const {
     deletePost,
 } = require('../controllers/users/user');
 const {
+    handleImageFile,
     validateEditDetails,
     validateEditEducation,
     validateEditEmployment,
@@ -39,7 +41,7 @@ const userRouter = Router();
 userRouter.use('/', checkAuthenticated);
 // All routes that contain objectIDs require objectID validation
 userRouter.use('/:userID', validateObjectIDs);
-userRouter.use('/:userID/posts/:postID', validateObjectIDs);
+userRouter.use('/:userID/posts/:postID', validateObjectIDs); // previous will not check :postID
 
 /*
     - Routes
@@ -57,6 +59,16 @@ userRouter.get('/:userID', getSpecificUser);
 userRouter.put('/:userID', verifySameUser, validateEditDetails, editDetail);
 userRouter.put('/:userID/education', verifySameUser, validateEditEducation, editEducation);
 userRouter.put('/:userID/employment', verifySameUser, validateEditEmployment, editEmployment);
+userRouter.put(
+    '/:userID/profile-picture',
+    handleImageFile('profilePicture'),
+    verifySameUser,
+    changeProfilePicture
+);
+
+/*
+    Account gallery
+*/
 
 /*
     Wall and posts

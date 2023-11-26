@@ -38,7 +38,8 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
         // center-square crop then scale to 400x400 - webp for smaller file size
         const result = await cloudinary.uploader.upload(path, {
             folder: newUserId,
-            eager: { crop: 'fill', height: 400, width: 400, format: 'webp' },
+            eager: { crop: 'fill', height: 400, width: 400 },
+            format: 'webp',
         });
 
         profilePictureURL = result.eager[0].secure_url;

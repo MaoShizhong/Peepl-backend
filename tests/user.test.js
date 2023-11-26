@@ -1,5 +1,6 @@
 const request = require('supertest');
 const { invalidPatternError, notFoundError } = require('../controllers/helpers/error_handling');
+const { extractPublicID } = require('../controllers/helpers/util');
 
 const app = require('./config/test_server');
 const { cloudinary } = require('../cloudinary/cloudinary');
@@ -16,20 +17,12 @@ const INVALID_OBJECT_ID = 'foobar';
 
 const loggedInUser = request.agent(app);
 
-let newUserCloudinaryImage;
-
-const saveProfilePictureInfoForDeletionAfterTest = (url) => {
-    const relevantFields = url.split('/').slice(-2);
-    const _id = relevantFields[0];
-    const public_id = relevantFields[1].slice(0, -5);
-
-    newUserCloudinaryImage = { folder: _id, public_id: public_id };
-};
+let newUserCloudinaryImagePrefix;
 
 // Cleanup test uploads from cloudinary database
 afterAll(async () => {
-    await cloudinary.api.delete_resources_by_prefix(newUserCloudinaryImage.folder);
-    await cloudinary.api.delete_folder(newUserCloudinaryImage.folder);
+    await cloudinary.api.delete_resources_by_prefix(newUserCloudinaryImagePrefix);
+    await cloudinary.api.delete_folder(newUserCloudinaryImagePrefix);
 });
 
 describe('Login with user', () => {
@@ -179,7 +172,7 @@ describe('Successful user creation', () => {
         expect(newUser).toHaveProperty('profilePicture');
         expect(newUser).not.toHaveProperty('password');
 
-        saveProfilePictureInfoForDeletionAfterTest(newUser.profilePicture);
+        [newUserCloudinaryImagePrefix] = extractPublicID(newUser.profilePicture).split('/');
     }, 10000);
 
     it('Adds new user to the test database even if optional form fields are missing', async () => {

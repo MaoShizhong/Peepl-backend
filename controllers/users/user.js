@@ -13,6 +13,7 @@ const {
     editDetail,
     editEducation,
     editEmployment,
+    changeProfilePicture,
 } = require('./user_PUT');
 const { unlikePost, deletePost } = require('./user_DELETE');
 
@@ -23,6 +24,7 @@ module.exports = {
     editDetail,
     editEducation,
     editEmployment,
+    changeProfilePicture,
     getWall,
     getFeed,
     getUserFriendsList,

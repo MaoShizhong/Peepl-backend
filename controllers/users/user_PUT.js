@@ -1,14 +1,16 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
+const Post = require('../../models/Post');
 const { acceptFriendRequest, rejectFriendRequest } = require('../helpers/friend_requests');
-const { sortByEndDescendingThenStartDescending } = require('../helpers/sort');
+const { sortByEndDescendingThenStartDescending, extractPublicID } = require('../helpers/util');
 const {
     editDetailsFields,
     editDetailsFieldsTheHaveSubfields,
 } = require('../validation/form_validation');
 const { notFoundError } = require('../helpers/error_handling');
 const { validationResult } = require('express-validator');
-const Post = require('../../models/Post');
+const { cloudinary } = require('../../cloudinary/cloudinary');
+const fs = require('fs');
 
 exports.respondToFriendRequest = asyncHandler(async (req, res) => {
     // ! when passport implemented, get user ID from req.user and verify with param
@@ -155,4 +157,43 @@ exports.editEmployment = asyncHandler(async (req, res) => {
         employment: updatedEmployment.value,
         visibility: updatedEmployment.visibility,
     });
+});
+
+exports.changeProfilePicture = asyncHandler(async (req, res) => {
+    const { _id } = req.user;
+    let profilePictureURL = null;
+
+    const user = await User.findById(_id).exec();
+
+    if (req.file) {
+        const { path } = req.file;
+
+        /*
+            Upload with standardised profile picture format:
+            center-square crop then scale to 400x400 - webp for smaller file
+            size then delete previous image data from db.
+            If no current profilePicture then cloudinary delete request will
+            try to delete with a public_id of '' which will simply do nothing.
+        */
+        const [result] = await Promise.all([
+            cloudinary.uploader.upload(path, {
+                folder: _id,
+                eager: { crop: 'fill', height: 400, width: 400 },
+                format: 'webp',
+            }),
+            cloudinary.api.delete_resources([extractPublicID(user.profilePicture)]),
+
+        ]);
+
+        profilePictureURL = result.eager[0].secure_url;
+
+        // delete temp image file once uploaded to cloudinary
+        fs.rmSync(`${process.cwd()}/${path}`);
+    }
+
+    user.profilePicture = profilePictureURL;
+    await user.save();
+
+    // set to the updated user's profilePicture property just in case for some
+    res.json({ profilePicture: profilePictureURL });
 });

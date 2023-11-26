@@ -11,3 +11,14 @@ exports.sortByEndDescendingThenStartDescending = (entryA, entryB) => {
         return sortByEndDateLatestFirst;
     }
 };
+
+exports.extractPublicID = (url) => {
+    if (!url) return '';
+
+    const sections = url.split('/');
+
+    const folder = sections.at(-2);
+    const id = sections.at(-1).replace('.webp', '');
+
+    return `${folder}/${id}`;
+}
