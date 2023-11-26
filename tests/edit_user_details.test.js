@@ -81,6 +81,7 @@ describe('Editing individual user details', () => {
             DOB: editForm.DOB.value,
             city: editForm.city.value,
             country: editForm.country.value,
+            galleryIsHidden: false,
             profilePicture: null,
         });
     });
@@ -96,6 +97,7 @@ describe('Editing individual user details', () => {
             name: `${editForm.firstName} ${editForm.lastName}`,
             DOB: editForm.DOB.value,
             profilePicture: null,
+            galleryIsHidden: false,
         });
     });
 
@@ -113,6 +115,7 @@ describe('Editing individual user details', () => {
             name: `${editForm.firstName} ${editForm.lastName}`,
             DOB: editForm.DOB.value,
             profilePicture: null,
+            galleryIsHidden: false,
         });
     });
 });

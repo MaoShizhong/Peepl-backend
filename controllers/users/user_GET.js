@@ -54,6 +54,7 @@ exports.getSpecificUser = asyncHandler(async (req, res) => {
                 _id: 0,
                 handle: 1,
                 profilePicture: 1,
+                galleryIsHidden: 1,
                 'details.firstName': 1,
                 'details.lastName': 1,
                 'details.DOB': removeFieldIfShouldHide('$details.DOB'),
@@ -76,6 +77,7 @@ exports.getSpecificUser = asyncHandler(async (req, res) => {
             _id: user._id,
             handle: user.handle,
             profilePicture: user.profilePicture,
+            galleryIsHidden: user.galleryIsHidden,
             name: `${firstName} ${lastName}`,
             ...hideableDetails,
         });

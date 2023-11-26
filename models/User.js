@@ -109,6 +109,7 @@ const UserSchema = new Schema(
                 },
             },
         },
+        galleryIsHidden: { type: Boolean, default: false },
         friends: [FriendSchema],
         isDemo: { type: Boolean, default: undefined },
         tokens: TokenSchema,

@@ -200,7 +200,7 @@ exports.users = [
                         title: 'Editor',
                         company: 'Edit Ltd',
                         start: '2015-12-17T03:23:00.000Z',
-                        end: null
+                        end: null,
                     },
                 ],
                 visibility: 'everyone',
@@ -216,7 +216,7 @@ exports.users = [
                 visibility: 'everyone',
             },
         },
-        friends: [],
+        friends: [{ user: userIDs[5], status: 'accepted' }],
     },
     {
         _id: userIDs[5],
@@ -244,7 +244,7 @@ exports.users = [
                         title: 'Imager',
                         company: 'Image Ltd',
                         start: '2015-12-17T03:23:00.000Z',
-                        end: null
+                        end: null,
                     },
                 ],
                 visibility: 'everyone',
@@ -260,6 +260,6 @@ exports.users = [
                 visibility: 'everyone',
             },
         },
-        friends: [],
+        friends: [{ user: userIDs[4], status: 'accepted' }],
     },
 ];

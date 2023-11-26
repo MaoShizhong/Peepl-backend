@@ -117,7 +117,7 @@ describe('Get user details', () => {
 
         expect(res.status).toBe(200);
         expect(Object.getOwnPropertyNames(res.body).sort()).toEqual(
-            ['handle', 'name', 'profilePicture'].sort()
+            ['handle', 'name', 'profilePicture', 'galleryIsHidden'].sort()
         );
         expect(res.body.name).toBe(`${details.firstName} ${details.lastName}`);
         expect(containsHiddenDetails(res.body)).toBe(false);
