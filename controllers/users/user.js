@@ -1,11 +1,17 @@
 const {
     getAllUsers,
     getSpecificUser,
-    getWall,
-    getUserFriendsList,
+    getRestOfProfile,
     getFeed,
+    getGallery,
 } = require('./user_GET');
-const { sendFriendRequest, validatePostForm, writePostToWall, likePost } = require('./user_POST');
+const {
+    sendFriendRequest,
+    validatePostForm,
+    writePostToWall,
+    likePost,
+    addPhotoToGallery,
+} = require('./user_POST');
 const {
     respondToFriendRequest,
     editPost,
@@ -15,7 +21,8 @@ const {
     editEmployment,
     changeProfilePicture,
 } = require('./user_PUT');
-const { unlikePost, deletePost } = require('./user_DELETE');
+const { toggleGalleryVisibility } = require('./user_PATCH');
+const { unlikePost, deletePost, deletePhoto } = require('./user_DELETE');
 
 module.exports = {
     getAllUsers,
@@ -25,9 +32,8 @@ module.exports = {
     editEducation,
     editEmployment,
     changeProfilePicture,
-    getWall,
+    getRestOfProfile,
     getFeed,
-    getUserFriendsList,
     validatePostForm,
     writePostToWall,
     likePost,
@@ -36,4 +42,8 @@ module.exports = {
     respondToFriendRequest,
     editPost,
     deletePost,
+    getGallery,
+    toggleGalleryVisibility,
+    addPhotoToGallery,
+    deletePhoto,
 };

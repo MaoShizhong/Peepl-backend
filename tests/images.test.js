@@ -55,8 +55,8 @@ describe('Manage profile picture', () => {
         expect(profilePictureURL.includes(imageUser._id)).toBe(true);
         expect(profilePictureURL.endsWith('.webp')).toBe(true);
 
-        const getRes = await loggedInUser.get(`/users/${imageUser._id}`);
-        expect(getRes.body).toHaveProperty('profilePicture', profilePictureURL);
+        const getRes = await loggedInUser.get(`/users/${imageUser.handle}`);
+        expect(getRes.body.user).toHaveProperty('profilePicture', profilePictureURL);
 
         // get image's public id to check cloudinary deletion after profile picture change (later test)
         firstProfilePicturePublicID = extractPublicID(profilePictureURL);
@@ -69,8 +69,8 @@ describe('Manage profile picture', () => {
         expect(imageRes.status).toBe(200);
         expect(imageRes.body).toHaveProperty('profilePicture');
 
-        const getRes = await loggedInUser.get(`/users/${imageUser._id}`);
-        expect(getRes.body).toHaveProperty('profilePicture', imageRes.body.profilePicture);
+        const getRes = await loggedInUser.get(`/users/${imageUser.handle}`);
+        expect(getRes.body.user).toHaveProperty('profilePicture', imageRes.body.profilePicture);
     });
 
     it('Deletes the previous profile picture from cloudinary when changed', async () => {
@@ -88,8 +88,8 @@ describe('Manage profile picture', () => {
         expect(deleteRes.status).toBe(200);
         expect(deleteRes.body).toHaveProperty('profilePicture', null);
 
-        const getRes = await loggedInUser.get(`/users/${imageUser._id}`);
-        expect(getRes.body).toHaveProperty('profilePicture', null);
+        const getRes = await loggedInUser.get(`/users/${imageUser.handle}`);
+        expect(getRes.body.user).toHaveProperty('profilePicture', null);
     });
 
     it('Only changes profile picture if requested user and logged in user match', async () => {
@@ -99,47 +99,57 @@ describe('Manage profile picture', () => {
         expect(imageRes.status).toBe(403);
         expect(imageRes.body).toEqual(unauthorisedError);
 
-        const getRes = await loggedInUser.get(`/users/${imageUser._id}`);
-        expect(getRes.body).toHaveProperty('profilePicture', null);
+        const getRes = await loggedInUser.get(`/users/${imageUser.handle}`);
+        expect(getRes.body.user).toHaveProperty('profilePicture', null);
     });
 });
 
-describe.skip('Manage user photo gallery', () => {
+describe('Manage user photo gallery', () => {
     let galleryPhotoURL;
 
-    it.skip("Gets a user's gallery", async () => {
+    it("Gets a user's gallery", async () => {
         const res = await loggedInUser.get(`/users/${imageUser._id}/gallery`);
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({ photos: [] });
+        expect(res.body).toEqual([]);
     });
 
-    it.skip("Uploads an image to the user's gallery", async () => {
+    it("Uploads an image to the user's gallery", async () => {
         const uploadRes = await loggedInUser
             .post(`/users/${imageUser._id}/gallery`)
-            .attach('profilePicture', `${__dirname}/images/test.png`);
+            .attach('photo', `${__dirname}/images/test.png`);
         expect(uploadRes.status).toBe(201);
-        expect(uploadRes.body).toHaveProperty('photoURL');
+        expect(uploadRes.body).toHaveProperty('user', imageUser._id);
+        expect(uploadRes.body).toHaveProperty('timestamp');
+        expect(uploadRes.body).toHaveProperty('url');
 
-        galleryPhotoURL = uploadRes.body.photoURL;
+        galleryPhotoURL = uploadRes.body.url;
 
         const galleryRes = await loggedInUser.get(`/users/${imageUser._id}/gallery`);
         expect(galleryRes.status).toBe(200);
-        expect(galleryRes.body).toEqual([galleryPhotoURL]);
+        expect(Array.isArray(galleryRes.body)).toBe(true);
+
+        galleryRes.body.forEach(photo => {
+            expect(photo).toMatchObject({
+                user: imageUser._id,
+                cloudinaryID: extractPublicID(galleryPhotoURL).split('/')[1],
+                url: galleryPhotoURL,
+            })
+        });
     });
 
-    it.skip("Makes a user's gallery viewable to other users if not hidden", async () => {
+    it("Makes a user's gallery viewable to other users if not hidden", async () => {
         const res = await notFriendUser.get(`/users/${imageUser._id}/gallery`);
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({ photos: [galleryPhotoURL] });
+        expect(res.body).toEqual([expect.objectContaining({ url: galleryPhotoURL })]);
     });
 
-    it.skip("Hides a user's gallery from non-friends when setting toggled", async () => {
-        const res = await notFriendUser.patch(`/users/${imageUser._id}/gallery`);
+    it("Hides a user's gallery from non-friends when setting toggled", async () => {
+        const res = await loggedInUser.patch(`/users/${imageUser._id}/gallery`);
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({ message: 'Gallery visibility: friends' });
+        expect(res.body).toEqual({ galleryIsHidden: true });
     });
 
-    it.skip("Makes a user's gallery viewable only to friends once hidden", async () => {
+    it("Makes a user's gallery viewable only to friends once hidden", async () => {
         const notFriendRes = await notFriendUser.get(`/users/${imageUser._id}/gallery`);
         expect(notFriendRes.status).toBe(403);
         expect(notFriendRes.body).toEqual({
@@ -148,10 +158,10 @@ describe.skip('Manage user photo gallery', () => {
 
         const friendRes = await wrongLoggedInUser.get(`/users/${imageUser._id}/gallery`);
         expect(friendRes.status).toBe(200);
-        expect(friendRes.body).toEqual({ photos: [galleryPhotoURL] });
+        expect(friendRes.body).toEqual([expect.objectContaining({ url: galleryPhotoURL })]);
     });
 
-    it.skip("Deletes a photo from the requesting user's gallery", async () => {
+    it("Deletes a photo from the requesting user's gallery", async () => {
         const photoID = extractPublicID(galleryPhotoURL).split('/')[1];
 
         const deleteRes = await loggedInUser.delete(`/users/${imageUser._id}/gallery/${photoID}`);
@@ -163,7 +173,7 @@ describe.skip('Manage user photo gallery', () => {
         expect(galleryRes.body).toEqual([]);
     });
 
-    it.skip('Deletes the image from cloudinary when deleted from gallery', async () => {
+    it('Deletes the image from cloudinary when deleted from gallery', async () => {
         const galleryPhotoPublicID = extractPublicID(galleryPhotoURL);
 
         try {
@@ -171,13 +181,15 @@ describe.skip('Manage user photo gallery', () => {
             expect(() => {}).not.toHaveBeenCalled();
         } catch (err) {
             expect(err.error.http_code).toBe(404);
-            expect(err.error.message).toBe(`Resource not found - ${extractPublicID(galleryPhotoPublicID)}`);
+            expect(err.error.message).toBe(
+                `Resource not found - ${extractPublicID(galleryPhotoPublicID)}`
+            );
         }
     });
 
-    it.skip("Unhides a user's hidden gallery when setting toggled", async () => {
-        const res = await notFriendUser.patch(`/users/${imageUser._id}/gallery`);
+    it("Unhides a user's hidden gallery when setting toggled", async () => {
+        const res = await loggedInUser.patch(`/users/${imageUser._id}/gallery`);
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({ message: 'Gallery visibility: everyone' });
+        expect(res.body).toEqual({ galleryIsHidden: false });
     });
 });

@@ -73,9 +73,9 @@ describe('Editing individual user details', () => {
         const editRes = await loggedInUser.put(`/users/${user._id}`).send(editForm);
         expect(editRes.status).toBe(200);
 
-        const getRes = await loggedInUser.get(`/users/${user._id}`);
+        const getRes = await loggedInUser.get(`/users/${editForm.handle}`);
         expect(getRes.status).toBe(200);
-        expect(getRes.body).toEqual({
+        expect(getRes.body.user).toEqual({
             handle: editForm.handle,
             name: `${editForm.firstName} ${editForm.lastName}`,
             DOB: editForm.DOB.value,
@@ -90,9 +90,9 @@ describe('Editing individual user details', () => {
         const editRes = await loggedInUser.put(`/users/${user._id}`).send(editFormHidden);
         expect(editRes.status).toBe(200);
 
-        const getRes = await loggedInUser.get(`/users/${user._id}`);
+        const getRes = await loggedInUser.get(`/users/${editFormHidden.handle}`);
         expect(getRes.status).toBe(200);
-        expect(getRes.body).toEqual({
+        expect(getRes.body.user).toEqual({
             handle: 'editedhandle',
             name: `${editForm.firstName} ${editForm.lastName}`,
             DOB: editForm.DOB.value,
@@ -108,9 +108,9 @@ describe('Editing individual user details', () => {
             error: 'You must be at least 13 years old to sign up to Peepl.',
         });
 
-        const getRes = await loggedInUser.get(`/users/${user._id}`);
+        const getRes = await loggedInUser.get(`/users/${editForm.handle}`);
         expect(getRes.status).toBe(200);
-        expect(getRes.body).toEqual({
+        expect(getRes.body.user).toEqual({
             handle: 'editedhandle',
             name: `${editForm.firstName} ${editForm.lastName}`,
             DOB: editForm.DOB.value,

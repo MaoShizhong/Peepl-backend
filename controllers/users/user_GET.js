@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
-const { ObjectId } = require('mongoose').Types;
 const User = require('../../models/User');
 const Post = require('../../models/Post');
+const Photo = require('../../models/Photo');
 const { notFoundError } = require('../helpers/error_handling');
 const { FEED_POSTS_PER_PAGE } = require('../helpers/constants');
 
@@ -31,8 +31,8 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
     res.json({ users: allUsersWithNames });
 });
 
-exports.getSpecificUser = asyncHandler(async (req, res) => {
-    const { userID } = req.params;
+exports.getSpecificUser = asyncHandler(async (req, res, next) => {
+    const { handle } = req.params;
 
     const removeFieldIfShouldHide = (field) => {
         // ! When friend system implemented, push 'friends' if req.user is not a friend
@@ -48,10 +48,9 @@ exports.getSpecificUser = asyncHandler(async (req, res) => {
     };
 
     const aggregationResult = await User.aggregate([
-        { $match: { _id: new ObjectId(userID) } },
+        { $match: { handle: handle } },
         {
             $project: {
-                _id: 0,
                 handle: 1,
                 profilePicture: 1,
                 galleryIsHidden: 1,
@@ -73,35 +72,47 @@ exports.getSpecificUser = asyncHandler(async (req, res) => {
     } else {
         const { firstName, lastName, ...hideableDetails } = user.details;
 
-        res.json({
+        req.profile = {
             _id: user._id,
-            handle: user.handle,
-            profilePicture: user.profilePicture,
-            galleryIsHidden: user.galleryIsHidden,
-            name: `${firstName} ${lastName}`,
-            ...hideableDetails,
-        });
+            user: {
+                handle: user.handle,
+                profilePicture: user.profilePicture,
+                galleryIsHidden: user.galleryIsHidden,
+                name: `${firstName} ${lastName}`,
+                ...hideableDetails,
+            },
+        };
+
+        next();
     }
 });
 
-exports.getUserFriendsList = asyncHandler(async (req, res) => {
-    const { userID } = req.params;
+exports.getRestOfProfile = asyncHandler(async (req, res) => {
+    const { _id } = req.profile;
 
-    const user = await User.findById(userID, 'friends -_id')
-        .populate({
-            path: 'friends.user',
-            options: { projection: 'details.firstName details.lastName' },
-        })
-        .exec();
-
-    if (!user) {
-        res.status(404).json(notFoundError);
-    }
+    const [user, wallPosts] = await Promise.all([
+        User.findOne(_id, 'friends -_id')
+            .populate({
+                path: 'friends.user',
+                options: { projection: 'details.firstName details.lastName profilePicture handle' },
+            })
+            .sort({ 'friends.user.details.firstName': 1, 'friends.user.details.lastName': 1 })
+            .exec(),
+        Post.find({ wall: _id })
+            .populate({
+                path: 'author',
+                options: { projection: 'handle details.firstName details.lastName' },
+            })
+            .sort({ timestamp: -1 })
+            .exec(),
+    ]);
 
     const formattedFriendsList = user.friends.map((friend) => {
         return {
             user: {
                 _id: friend.user._id,
+                handle: friend.user.handle,
+                profilePicture: friend.user.profilePicture,
                 firstName: friend.user.details.firstName,
                 lastName: friend.user.details.lastName,
             },
@@ -109,21 +120,10 @@ exports.getUserFriendsList = asyncHandler(async (req, res) => {
         };
     });
 
-    res.json(formattedFriendsList);
-});
+    req.profile.friends = formattedFriendsList;
+    req.profile.wall = wallPosts;
 
-exports.getWall = asyncHandler(async (req, res) => {
-    const { userID } = req.params;
-
-    const wallPosts = await Post.find({ wall: userID })
-        .populate({
-            path: 'author',
-            options: { projection: 'handle details.firstName details.lastName' },
-        })
-        .sort({ timestamp: -1 })
-        .exec();
-
-    res.json(wallPosts);
+    res.json({ user: req.profile.user, friends: req.profile.friends, wall: req.profile.wall });
 });
 
 exports.getFeed = asyncHandler(async (req, res) => {
@@ -144,4 +144,27 @@ exports.getFeed = asyncHandler(async (req, res) => {
         .exec();
 
     res.json(feedPosts);
+});
+
+exports.getGallery = asyncHandler(async (req, res) => {
+    const { userID } = req.params;
+    const { _id } = req.user;
+
+    const [self, galleryOwner] = await Promise.all([
+        User.findById(_id).exec(),
+        User.findById(userID).exec(),
+    ]);
+
+    const isFriendsWithGalleryOwner = self.friends.find(
+        (friend) => friend.user.valueOf() === userID
+    );
+    if (_id !== userID && galleryOwner.galleryIsHidden && !isFriendsWithGalleryOwner) {
+        return res.status(403).json({
+            message: 'This user has chosen to make their gallery visible only to their friends.',
+        });
+    }
+
+    const gallery = await Photo.find({ user: userID }).sort({ timestamp: -1 }).exec();
+
+    res.json(gallery);
 });

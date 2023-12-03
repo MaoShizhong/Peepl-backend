@@ -32,10 +32,10 @@ describe('Send friend requests', () => {
         expect(requestRes.status).toBe(403);
         expect(requestRes.body).toEqual({ error: 'User not authorised to make this request.' });
 
-        const getRes = await loggedInUser0.get(`/users/${userIDs[0]}/friends`);
+        const getRes = await loggedInUser0.get(`/users/${users[0].handle}`);
 
         expect(getRes.status).toBe(200);
-        expect(getRes.body).toEqual([]);
+        expect(getRes.body.friends).toEqual([]);
     });
 
     it("Adds a 'requested' friend to a user's friends list upon sending a friend request", async () => {
@@ -49,31 +49,31 @@ describe('Send friend requests', () => {
         expect(requestRes1.status).toBe(200);
         expect(reqestRes2.status).toBe(200);
 
-        const getRes = await loggedInUser0.get(`/users/${userIDs[0]}/friends`);
+        const getRes = await loggedInUser0.get(`/users/${users[0].handle}`);
 
         expect(getRes.status).toBe(200);
-        expect(getRes.body.at(-2)).toEqual({
+        expect(getRes.body.friends.at(-2)).toMatchObject({
             user: { _id: userIDs[2], firstName: 'Fr2', lastName: 'Last2' },
             status: 'requested',
         });
-        expect(getRes.body.at(-1)).toEqual({
+        expect(getRes.body.friends.at(-1)).toMatchObject({
             user: { _id: userIDs[3], firstName: 'Fr3', lastName: 'Last3' },
             status: 'requested',
         });
     });
 
     it("Adds an 'incoming' friend request to the recipient user of a new friend request", async () => {
-        const getRes1 = await loggedInUser0.get(`/users/${userIDs[2]}/friends`);
-        const getRes2 = await loggedInUser0.get(`/users/${userIDs[3]}/friends`);
+        const getRes1 = await loggedInUser0.get(`/users/${users[2].handle}`);
+        const getRes2 = await loggedInUser0.get(`/users/${users[3].handle}`);
 
         expect(getRes1.status).toBe(200);
-        expect(getRes1.body.at(-1)).toEqual({
+        expect(getRes1.body.friends.at(-1)).toMatchObject({
             user: { _id: userIDs[0], firstName: 'Fr0', lastName: 'Last0' },
             status: 'incoming',
         });
 
         expect(getRes2.status).toBe(200);
-        expect(getRes2.body.at(-1)).toEqual({
+        expect(getRes2.body.friends.at(-1)).toMatchObject({
             user: { _id: userIDs[0], firstName: 'Fr0', lastName: 'Last0' },
             status: 'incoming',
         });
@@ -91,17 +91,17 @@ describe('Send friend requests', () => {
         );
         expect(acceptRes.status).toBe(200);
 
-        const getRes1 = await loggedInUser2.get(`/users/${userIDs[0]}/friends`);
-        const getRes2 = await loggedInUser2.get(`/users/${userIDs[2]}/friends`);
+        const getRes1 = await loggedInUser2.get(`/users/${users[0].handle}`);
+        const getRes2 = await loggedInUser2.get(`/users/${users[2].handle}`);
 
         expect(getRes1.status).toBe(200);
-        expect(getRes1.body[0]).toEqual({
+        expect(getRes1.body.friends[0]).toMatchObject({
             user: { _id: userIDs[2], firstName: 'Fr2', lastName: 'Last2' },
             status: 'accepted',
         });
 
         expect(getRes2.status).toBe(200);
-        expect(getRes2.body).toEqual([
+        expect(getRes2.body.friends).toMatchObject([
             {
                 user: { _id: userIDs[0], firstName: 'Fr0', lastName: 'Last0' },
                 status: 'accepted',
@@ -120,18 +120,18 @@ describe('Send friend requests', () => {
         );
         expect(rejectRes.status).toBe(200);
 
-        const getRes1 = await loggedInUser3.get(`/users/${userIDs[0]}/friends`);
-        const getRes2 = await loggedInUser3.get(`/users/${userIDs[3]}/friends`);
+        const getRes1 = await loggedInUser3.get(`/users/${users[0].handle}`);
+        const getRes2 = await loggedInUser3.get(`/users/${users[3].handle}`);
 
         expect(getRes1.status).toBe(200);
-        expect(getRes1.body).toEqual([
+        expect(getRes1.body.friends).toEqual([
             expect.not.objectContaining({
                 user: { _id: userIDs[3], firstName: 'Fr3', lastName: 'Last3' },
             }),
         ]);
 
         expect(getRes2.status).toBe(200);
-        expect(getRes2.body).toEqual([]);
+        expect(getRes2.body.friends).toEqual([]);
     });
 
     it('Returns a 400 if any query string is missing', async () => {
@@ -154,9 +154,9 @@ describe('Send friend requests', () => {
         expect(requestRes.status).toEqual(400);
         expect(requestRes.body).toEqual(invalidPatternError(INVALID_OBJECT_ID));
 
-        const getRes = await loggedInUser0.get(`/users/${userIDs[1]}/friends`);
+        const getRes = await loggedInUser0.get(`/users/${users[1].handle}`);
         expect(getRes.status).toBe(200);
-        expect(getRes.body).toEqual([]);
+        expect(getRes.body.friends).toEqual([]);
     });
 
     it('Prevents attempting to add a non-existant user as a friend, returning a 404', async () => {
@@ -166,9 +166,9 @@ describe('Send friend requests', () => {
         expect(requestRes.status).toBe(404);
         expect(requestRes.body).toEqual(notFoundError);
 
-        const getRes = await loggedInUser0.get(`/users/${userIDs[0]}/friends`);
+        const getRes = await loggedInUser0.get(`/users/${users[0].handle}`);
         expect(getRes.status).toBe(200);
-        expect(getRes.body.length).toBe(1);
+        expect(getRes.body.friends.length).toBe(1);
     });
 
     it('Prevents actioning upon a non-existant friend request (valid user ID), returning a 403', async () => {
@@ -178,8 +178,8 @@ describe('Send friend requests', () => {
         expect(nonexistantRes.status).toBe(403);
         expect(nonexistantRes.body).toEqual(notFoundError);
 
-        const user2Res = await loggedInUser3.get(`/users/${userIDs[3]}/friends`);
+        const user2Res = await loggedInUser3.get(`/users/${users[3].handle}`);
         expect(user2Res.status).toBe(200);
-        expect(user2Res.body).toEqual([]);
+        expect(user2Res.body.friends).toEqual([]);
     });
 });

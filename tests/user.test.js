@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { invalidPatternError, notFoundError } = require('../controllers/helpers/error_handling');
+const { notFoundError } = require('../controllers/helpers/error_handling');
 const { extractPublicID } = require('../controllers/helpers/util');
 
 const app = require('./config/test_server');
@@ -9,11 +9,8 @@ const { users } = require('./config/test_users');
 const { friendUsers } = require('./config/test_friends');
 const { feedUsers } = require('./config/test_feedusers');
 
-const userIDs = users.map((user) => user._id.valueOf());
-
 const STARTING_USER_COUNT = users.length + friendUsers.length + feedUsers.length;
 const NONEXISTANT_ID = '65269890203feea7cca8826b';
-const INVALID_OBJECT_ID = 'foobar';
 
 const loggedInUser = request.agent(app);
 
@@ -82,15 +79,15 @@ describe('Get user details', () => {
         expect(res.body.users.length).toBe(STARTING_USER_COUNT);
     });
 
-    it("Gets first user from in-memory test database, showing name and other details marked with 'visibility: everyone'", async () => {
+    it("Gets first user from in-memory test database, showing name and other details marked with 'visibility: everyone'; no _id", async () => {
         const { details } = users[0];
 
-        const res = await loggedInUser.get(`/users/${userIDs[0]}`);
+        const res = await loggedInUser.get(`/users/${users[0].handle}`);
 
         expect(res.status).toBe(200);
-        expect(res.body).not.toHaveProperty('_id');
-        expect(res.body).toHaveProperty('handle');
-        expect(res.body).toMatchObject({
+        expect(res.body.user).not.toHaveProperty('_id');
+        expect(res.body.user).toHaveProperty('handle');
+        expect(res.body.user).toMatchObject({
             name: `${details.firstName} ${details.lastName}`,
             DOB: details.DOB.value,
             city: details.city.value,
@@ -113,13 +110,13 @@ describe('Get user details', () => {
             return resKeys.some((key) => hiddenDetails.includes(key));
         };
 
-        const res = await loggedInUser.get(`/users/${userIDs[3]}`);
+        const res = await loggedInUser.get(`/users/${users[3].handle}`);
 
         expect(res.status).toBe(200);
-        expect(Object.getOwnPropertyNames(res.body).sort()).toEqual(
+        expect(Object.getOwnPropertyNames(res.body.user).sort()).toEqual(
             ['handle', 'name', 'profilePicture', 'galleryIsHidden'].sort()
         );
-        expect(res.body.name).toBe(`${details.firstName} ${details.lastName}`);
+        expect(res.body.user.name).toBe(`${details.firstName} ${details.lastName}`);
         expect(containsHiddenDetails(res.body)).toBe(false);
     });
 
@@ -127,12 +124,6 @@ describe('Get user details', () => {
         const res = await loggedInUser.get(`/users/${NONEXISTANT_ID}`);
         expect(res.status).toBe(404);
         expect(res.body).toEqual(notFoundError);
-    });
-
-    it('Returns 400 when fetching with invalid ObjectID pattern', async () => {
-        const res = await loggedInUser.get(`/users/${INVALID_OBJECT_ID}`);
-        expect(res.status).toBe(400);
-        expect(res.body).toEqual(invalidPatternError(INVALID_OBJECT_ID));
     });
 });
 
