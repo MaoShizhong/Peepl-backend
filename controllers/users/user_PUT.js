@@ -182,7 +182,6 @@ exports.changeProfilePicture = asyncHandler(async (req, res) => {
                 format: 'webp',
             }),
             cloudinary.api.delete_resources([extractPublicID(user.profilePicture)]),
-
         ]);
 
         profilePictureURL = result.eager[0].secure_url;

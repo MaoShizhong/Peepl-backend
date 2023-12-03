@@ -82,9 +82,10 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
 });
 
 exports.login = (req, res) => {
-    const { handle, email, details, isDemo, isGithubOnly } = req.user;
+    const { _id, handle, email, details, isDemo, isGithubOnly } = req.user;
 
     res.status(201).json({
+        _id: _id,
         handle: handle,
         email: email,
         details: details,
@@ -93,7 +94,25 @@ exports.login = (req, res) => {
     });
 };
 
+exports.logout = (req, res, next) => {
+    req.logout((err) => {
+        req.session.destroy();
+        res.clearCookie('connect.sid', {
+            secure: process.env.MODE === 'prod',
+            maxAge: 2 * 24 * 60 * 60 * 1000,
+            httpOnly: process.env.MODE === 'prod',
+            sameSite: process.env.MODE === 'prod' ? 'none' : 'lax',
+        });
+
+        if (err) next(err);
+        else res.end();
+    });
+};
+
 exports.checkAuthenticated = (req, res, next) => {
-    if (req.isAuthenticated()) next();
-    else res.status(401).json({ error: 'Not logged in.' });
+    if (req.isAuthenticated()) {
+        next();
+    } else {
+        res.status(401).json({ error: 'Not logged in.' });
+    }
 };

@@ -1,9 +1,12 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
 const Post = require('../../models/Post');
+const Photo = require('../../models/Photo');
 const { notFoundError } = require('../helpers/error_handling');
 const { body, validationResult } = require('express-validator');
+const { cloudinary } = require('../../cloudinary/cloudinary');
 const { POST_CHAR_LIMIT } = require('../helpers/constants');
+const fs = require('fs');
 
 exports.sendFriendRequest = asyncHandler(async (req, res) => {
     // When passport implemented, userID will be obtained from req.user
@@ -82,4 +85,33 @@ exports.likePost = asyncHandler(async (req, res) => {
     } else {
         res.json({ post });
     }
+});
+
+exports.addPhotoToGallery = asyncHandler(async (req, res) => {
+    const { _id } = req.user;
+    const { path: filePath } = req.file;
+
+    // Limit image physical size which should double up on file size reduction with webp format
+    const uploadedImage = await cloudinary.uploader.upload(filePath, {
+        folder: _id,
+        eager: { crop: 'limit', height: 1080, width: 1920 },
+        format: 'webp',
+    });
+
+    // delete temp image file once uploaded to cloudinary
+    fs.rmSync(`${process.cwd()}/${filePath}`);
+
+    const publicID = uploadedImage.public_id;
+    const cloudinaryID = publicID.split('/')[1];
+
+    const photo = new Photo({
+        user: _id,
+        timestamp: new Date(),
+        cloudinaryID: cloudinaryID,
+        url: uploadedImage.eager[0].secure_url,
+    });
+
+    await photo.save();
+
+    res.status(201).json(photo);
 });

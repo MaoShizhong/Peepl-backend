@@ -76,11 +76,11 @@ app.use(passport.session());
 /*
     - Initialise routers
 */
-// const authRouter = require('./routes/auth_router');
-// const userRouter = require('./routes/user_router');
+const authRouter = require('./routes/auth_router');
+const userRouter = require('./routes/user_router');
 
-// app.use('/auth', authRouter);
-// app.use('/users', userRouter);
+app.use('/auth', authRouter);
+app.use('/users', userRouter);
 
 /*
     - Listen
