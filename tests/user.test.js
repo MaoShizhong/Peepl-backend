@@ -79,13 +79,12 @@ describe('Get user details', () => {
         expect(res.body.users.length).toBe(STARTING_USER_COUNT);
     });
 
-    it("Gets first user from in-memory test database, showing name and other details marked with 'visibility: everyone'; no _id", async () => {
+    it("Gets first user from in-memory test database, showing name and other details marked with 'visibility: everyone'", async () => {
         const { details } = users[0];
 
         const res = await loggedInUser.get(`/users/${users[0].handle}`);
 
         expect(res.status).toBe(200);
-        expect(res.body.user).not.toHaveProperty('_id');
         expect(res.body.user).toHaveProperty('handle');
         expect(res.body.user).toMatchObject({
             name: `${details.firstName} ${details.lastName}`,
@@ -98,7 +97,7 @@ describe('Get user details', () => {
         });
     });
 
-    it("Gets fourth user from in-memory test database, showing only name and handle (other details are set to 'visibility: hidden'; no _id)", async () => {
+    it("Gets fourth user from in-memory test database, showing only name and handle (other details are set to 'visibility: hidden')", async () => {
         const { details } = users[3];
 
         const containsHiddenDetails = (resObj) => {
@@ -114,7 +113,7 @@ describe('Get user details', () => {
 
         expect(res.status).toBe(200);
         expect(Object.getOwnPropertyNames(res.body.user).sort()).toEqual(
-            ['handle', 'name', 'profilePicture', 'galleryIsHidden'].sort()
+            ['_id', 'handle', 'name', 'profilePicture', 'galleryIsHidden'].sort()
         );
         expect(res.body.user.name).toBe(`${details.firstName} ${details.lastName}`);
         expect(containsHiddenDetails(res.body)).toBe(false);

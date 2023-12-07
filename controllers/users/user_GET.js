@@ -73,8 +73,8 @@ exports.getSpecificUser = asyncHandler(async (req, res, next) => {
         const { firstName, lastName, ...hideableDetails } = user.details;
 
         req.profile = {
-            _id: user._id,
             user: {
+                _id: user._id,
                 handle: user.handle,
                 profilePicture: user.profilePicture,
                 galleryIsHidden: user.galleryIsHidden,
@@ -88,7 +88,7 @@ exports.getSpecificUser = asyncHandler(async (req, res, next) => {
 });
 
 exports.getRestOfProfile = asyncHandler(async (req, res) => {
-    const { _id } = req.profile;
+    const { _id } = req.profile.user;
 
     const [user, wallPosts] = await Promise.all([
         User.findOne(_id, 'friends -_id')
@@ -123,7 +123,7 @@ exports.getRestOfProfile = asyncHandler(async (req, res) => {
     req.profile.friends = formattedFriendsList;
     req.profile.wall = wallPosts;
 
-    res.json({ user: req.profile.user, friends: req.profile.friends, wall: req.profile.wall });
+    res.json(req.profile);
 });
 
 exports.getFeed = asyncHandler(async (req, res) => {

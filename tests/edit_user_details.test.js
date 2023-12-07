@@ -76,6 +76,7 @@ describe('Editing individual user details', () => {
         const getRes = await loggedInUser.get(`/users/${editForm.handle}`);
         expect(getRes.status).toBe(200);
         expect(getRes.body.user).toEqual({
+            _id: user._id,
             handle: editForm.handle,
             name: `${editForm.firstName} ${editForm.lastName}`,
             DOB: editForm.DOB.value,
@@ -93,6 +94,7 @@ describe('Editing individual user details', () => {
         const getRes = await loggedInUser.get(`/users/${editFormHidden.handle}`);
         expect(getRes.status).toBe(200);
         expect(getRes.body.user).toEqual({
+            _id: user._id,
             handle: 'editedhandle',
             name: `${editForm.firstName} ${editForm.lastName}`,
             DOB: editForm.DOB.value,
@@ -111,6 +113,7 @@ describe('Editing individual user details', () => {
         const getRes = await loggedInUser.get(`/users/${editForm.handle}`);
         expect(getRes.status).toBe(200);
         expect(getRes.body.user).toEqual({
+            _id: user._id,
             handle: 'editedhandle',
             name: `${editForm.firstName} ${editForm.lastName}`,
             DOB: editForm.DOB.value,

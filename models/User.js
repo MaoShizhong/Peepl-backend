@@ -13,6 +13,7 @@ const EmploymentSchema = new Schema(
 const EducationSchema = new Schema(
     {
         institution: String,
+        course: String,
         start: Date,
         end: Date,
     },

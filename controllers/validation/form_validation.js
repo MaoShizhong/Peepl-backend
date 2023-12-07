@@ -118,7 +118,7 @@ const userFormValidators = {
         .custom((array) =>
             // noSQL injection protection
             array.every((entry) => {
-                const requiredFields = ['institution', 'start', 'end'];
+                const requiredFields = ['institution', 'course', 'start', 'end'];
                 const objectFields = Object.keys(entry);
                 const objectValues = Object.values(entry);
 
