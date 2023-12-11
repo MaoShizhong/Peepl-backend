@@ -101,7 +101,7 @@ exports.getRestOfProfile = asyncHandler(async (req, res) => {
         Post.find({ wall: _id })
             .populate({
                 path: 'author',
-                options: { projection: 'handle details.firstName details.lastName' },
+                options: { projection: 'handle details.firstName details.lastName profilePicture' },
             })
             .sort({ timestamp: -1 })
             .exec(),
@@ -141,9 +141,13 @@ exports.getFeed = asyncHandler(async (req, res) => {
         .skip(postsToSkip)
         .limit(FEED_POSTS_PER_PAGE)
         .sort({ timestamp: -1 })
+        .populate({
+            path: 'author',
+            options: { projection: 'handle details.firstName details.lastName profilePicture' },
+        })
         .exec();
 
-    res.json(feedPosts);
+    res.json({ feed: feedPosts });
 });
 
 exports.getGallery = asyncHandler(async (req, res) => {
