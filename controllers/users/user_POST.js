@@ -65,8 +65,9 @@ exports.writePostToWall = asyncHandler(async (req, res) => {
     });
 
     await wallPost.save();
+    await wallPost.populate('author', 'handle details.firstName details.lastName profilePicture');
 
-    res.status(201).json(wallPost);
+    res.status(201).json({ post: wallPost });
 });
 
 exports.likePost = asyncHandler(async (req, res) => {
