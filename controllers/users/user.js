@@ -22,7 +22,7 @@ const {
     changeProfilePicture,
 } = require('./user_PUT');
 const { toggleGalleryVisibility } = require('./user_PATCH');
-const { unlikePost, deletePost, deletePhoto } = require('./user_DELETE');
+const { unlikePost, deletePost, deletePhoto, removeFriend } = require('./user_DELETE');
 
 module.exports = {
     getAllUsers,
@@ -40,6 +40,7 @@ module.exports = {
     unlikePost,
     sendFriendRequest,
     respondToFriendRequest,
+    removeFriend,
     editPost,
     deletePost,
     getGallery,

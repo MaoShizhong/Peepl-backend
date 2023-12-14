@@ -75,5 +75,6 @@ userRouter.use('/:userID/friends', verifySameUser, validateFriendQueryObjectIDs)
 
 userRouter.post('/:userID/friends', user.sendFriendRequest);
 userRouter.put('/:userID/friends', user.respondToFriendRequest);
+userRouter.delete('/:userID/friends/:friendID', user.removeFriend);
 
 module.exports = userRouter;

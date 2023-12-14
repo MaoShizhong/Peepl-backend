@@ -4,27 +4,46 @@ const Post = require('../../models/Post');
 const Photo = require('../../models/Photo');
 const { notFoundError } = require('../helpers/error_handling');
 const { FEED_POSTS_PER_PAGE } = require('../helpers/constants');
+const { getFriendStatus } = require('../helpers/friend_requests');
 
 exports.getAllUsers = asyncHandler(async (req, res) => {
-    let { search } = req.query;
-    search ??= '';
+    const { _id, handle } = req.user;
+    const { search } = req.query;
+    const uriDecodedSearchQuery = decodeURIComponent(search ?? '');
 
-    const searchRegex = new RegExp(search, 'i');
+    const searchRegex = new RegExp(uriDecodedSearchQuery, 'i');
 
-    const allUsers = await User.find({
-        $or: [
-            { 'details.firstName': { $regex: searchRegex } },
-            { 'details.lastName': { $regex: searchRegex } },
-        ],
-    })
-        .select(['profilePicture', 'details.firstName', 'details.lastName'])
-        .exec();
+    const [allUsers, friendsList] = await Promise.all([
+        User.aggregate([
+            {
+                $addFields: {
+                    fullName: { $concat: ['$details.firstName', ' ', '$details.lastName'] },
+                },
+            },
+            {
+                $match: {
+                    $and: [{ fullName: { $regex: searchRegex } }, { handle: { $ne: handle } }],
+                },
+            },
+            {
+                $project: {
+                    profilePicture: 1,
+                    'details.firstName': 1,
+                    'details.lastName': 1,
+                    handle: 1,
+                },
+            },
+        ]).exec(),
+        User.findById(_id, 'friends -_id').exec(),
+    ]);
 
     const allUsersWithNames = allUsers.map((user) => {
         return {
             _id: user._id,
+            handle: user.handle,
             profilePicture: user.profilePicture,
             name: `${user.details.firstName} ${user.details.lastName}`,
+            status: getFriendStatus(friendsList.friends, user._id),
         };
     });
 
@@ -63,7 +82,7 @@ exports.getSpecificUser = asyncHandler(async (req, res, next) => {
                 'details.education': removeFieldIfShouldHide('$details.education'),
             },
         },
-    ]);
+    ]).exec();
 
     const user = aggregationResult[0];
 

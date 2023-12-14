@@ -1,8 +1,9 @@
 const asyncHandler = require('express-async-handler');
+const User = require('../../models/User');
 const Post = require('../../models/Post');
+const Photo = require('../../models/Photo');
 const { cloudinary } = require('../../cloudinary/cloudinary');
 const { notFoundError } = require('../helpers/error_handling');
-const Photo = require('../../models/Photo');
 
 exports.unlikePost = asyncHandler(async (req, res) => {
     const { postID } = req.params;
@@ -46,4 +47,15 @@ exports.deletePhoto = asyncHandler(async (req, res) => {
     ]);
 
     res.json({ message: `${photoID} successfully deleted.` });
+});
+
+exports.removeFriend = asyncHandler(async (req, res) => {
+    const { userID, friendID } = req.params;
+
+    await Promise.all([
+        User.findByIdAndUpdate(userID, { $pull: { friends: { user: friendID } } }),
+        User.findByIdAndUpdate(friendID, { $pull: { friends: { user: userID } } }),
+    ]);
+
+    res.json({ removedFriendID: friendID });
 });

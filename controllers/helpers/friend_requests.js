@@ -35,3 +35,12 @@ exports.rejectFriendRequest = asyncHandler(async (self, target) => {
     await Promise.all([self.save(), target.save()]);
     return true;
 });
+
+exports.getFriendStatus = (friendsList, userID) => {
+    userID = userID.valueOf();
+
+    const friend = friendsList.find(friend => friend.user.valueOf() === userID);
+
+    if (!friend) return null;
+    else return friend.status;
+};
