@@ -64,12 +64,14 @@ exports.editPost = asyncHandler(async (req, res) => {
         postID,
         { body: req.body.body, isEdited: true },
         { new: true }
-    );
+    )
+        .populate('author', 'handle details.firstName details.lastName profilePicture')
+        .exec();
 
     if (!editedPost) {
         res.status(404).json(notFoundError);
     } else {
-        res.json(editedPost);
+        res.json({ editedPost });
     }
 });
 

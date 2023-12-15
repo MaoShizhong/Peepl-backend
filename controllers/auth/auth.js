@@ -82,16 +82,9 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
 });
 
 exports.login = (req, res) => {
-    const { _id, handle, email, details, isDemo, isGithubOnly } = req.user;
+    const { _id, handle, profilePicture, email, details, isDemo, isGithubOnly } = req.user;
 
-    res.status(201).json({
-        _id: _id,
-        handle: handle,
-        email: email,
-        details: details,
-        isDemo: isDemo,
-        isGithubOnly: isGithubOnly,
-    });
+    res.status(201).json({ _id, handle, profilePicture, email, details, isDemo, isGithubOnly });
 };
 
 exports.logout = (req, res, next) => {

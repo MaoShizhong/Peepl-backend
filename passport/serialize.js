@@ -12,6 +12,7 @@ exports.deserialize = async (id, done) => {
         done(null, {
             _id: user._id.valueOf(),
             handle: user.handle,
+            profilePicture: user.profilePicture,
             email: user.email,
             details: user.details,
             isDemo: user.isDemo,
