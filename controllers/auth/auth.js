@@ -92,7 +92,6 @@ exports.logout = (req, res, next) => {
         req.session.destroy();
         res.clearCookie('connect.sid', {
             secure: process.env.MODE === 'prod',
-            maxAge: 2 * 24 * 60 * 60 * 1000,
             httpOnly: process.env.MODE === 'prod',
             sameSite: process.env.MODE === 'prod' ? 'none' : 'lax',
         });

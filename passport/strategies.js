@@ -32,65 +32,65 @@ exports.localStrategy = new LocalStrategy(
     }
 );
 
-exports.githubStrategy = new GithubStrategy(
-    {
-        clientID: process.env.GITHUB_APP_ID,
-        clientSecret: process.env.GITHUB_APP_SECRET,
-        callbackURL:
-            process.env.MODE === 'prod'
-                ? process.env.PROD_GITHUB_CALLBACK_URL
-                : process.env.DEV_GITHUB_CALLBACK_URL,
-        scope: ['user:email'],
-    },
-    async (_, __, profile, done) => {
-        try {
-            const { id, username, emails } = profile;
-            const email = emails[0].value;
+// exports.githubStrategy = new GithubStrategy(
+//     {
+//         clientID: process.env.GITHUB_APP_ID,
+//         clientSecret: process.env.GITHUB_APP_SECRET,
+//         callbackURL:
+//             process.env.MODE === 'prod'
+//                 ? process.env.PROD_GITHUB_CALLBACK_URL
+//                 : process.env.DEV_GITHUB_CALLBACK_URL,
+//         scope: ['user:email'],
+//     },
+//     async (_, __, profile, done) => {
+//         try {
+//             const { id, username, emails } = profile;
+//             const email = emails[0].value;
 
-            const existingUser = await User.findOne({ auth: 'github', githubID: id }).exec();
+//             const existingUser = await User.findOne({ auth: 'github', githubID: id }).exec();
 
-            if (existingUser) {
-                // Update stored email if changed on GH
-                // because GH accounts on Spique cannot change their emails on the client
-                if (email !== existingUser.email) {
-                    existingUser.email = email;
-                    await existingUser.save();
-                }
+//             if (existingUser) {
+//                 // Update stored email if changed on GH
+//                 // because GH accounts on Spique cannot change their emails on the client
+//                 if (email !== existingUser.email) {
+//                     existingUser.email = email;
+//                     await existingUser.save();
+//                 }
 
-                done(null, {
-                    _id: existingUser._id.valueOf(),
-                    username: existingUser.username,
-                    email: email,
-                    isDemo: existingUser.isDemo,
-                    isGithub: existingUser.auth === 'github',
-                });
-            } else {
-                const usernameRegex = new RegExp(`^${username}\\d*$`);
+//                 done(null, {
+//                     _id: existingUser._id.valueOf(),
+//                     username: existingUser.username,
+//                     email: email,
+//                     isDemo: existingUser.isDemo,
+//                     isGithub: existingUser.auth === 'github',
+//                 });
+//             } else {
+//                 const usernameRegex = new RegExp(`^${username}\\d*$`);
 
-                const existingUsernameCount = await User.countDocuments({
-                    username: { $regex: usernameRegex },
-                }).exec();
+//                 const existingUsernameCount = await User.countDocuments({
+//                     username: { $regex: usernameRegex },
+//                 }).exec();
 
-                const newUser = new User({
-                    username: `${username}${existingUsernameCount || ''}`,
-                    auth: 'github',
-                    email: email,
-                    githubID: id,
-                    friends: [],
-                });
+//                 const newUser = new User({
+//                     username: `${username}${existingUsernameCount || ''}`,
+//                     auth: 'github',
+//                     email: email,
+//                     githubID: id,
+//                     friends: [],
+//                 });
 
-                await newUser.save();
+//                 await newUser.save();
 
-                done(null, {
-                    _id: newUser._id.valueOf(),
-                    username: newUser.username,
-                    email: email,
-                    isDemo: newUser.isDemo,
-                    isGithub: newUser.auth === 'github',
-                });
-            }
-        } catch (err) {
-            return done(err);
-        }
-    }
-);
+//                 done(null, {
+//                     _id: newUser._id.valueOf(),
+//                     username: newUser.username,
+//                     email: email,
+//                     isDemo: newUser.isDemo,
+//                     isGithub: newUser.auth === 'github',
+//                 });
+//             }
+//         } catch (err) {
+//             return done(err);
+//         }
+//     }
+// );

@@ -189,5 +189,5 @@ exports.getGallery = asyncHandler(async (req, res) => {
 
     const gallery = await Photo.find({ user: userID }).sort({ timestamp: -1 }).exec();
 
-    res.json(gallery);
+    res.json({ gallery });
 });
