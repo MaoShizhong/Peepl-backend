@@ -87,18 +87,13 @@ exports.login = (req, res) => {
     res.status(201).json({ _id, handle, profilePicture, email, details, isDemo, isGithubOnly });
 };
 
-exports.logout = (req, res, next) => {
-    req.logout((err) => {
-        req.session.destroy();
-        res.clearCookie('connect.sid', {
-            secure: process.env.MODE === 'prod',
-            httpOnly: process.env.MODE === 'prod',
-            sameSite: process.env.MODE === 'prod' ? 'none' : 'lax',
-        });
-
-        if (err) next(err);
-        else res.end();
-    });
+exports.logout = (req, res) => {
+    req.session.destroy();
+    res.clearCookie('connect.sid', {
+        secure: process.env.MODE === 'prod',
+        httpOnly: process.env.MODE === 'prod',
+        sameSite: process.env.MODE === 'prod' ? 'none' : 'lax',
+    }).json({ message: 'Log out successful.' });
 };
 
 exports.checkAuthenticated = (req, res, next) => {
