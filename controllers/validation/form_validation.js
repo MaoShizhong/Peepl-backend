@@ -173,7 +173,6 @@ const signupFieldsLocal = [
 
 const editDetailsFields = [
     'handle',
-    'email',
     'firstName',
     'lastName',
     'DOB.value',
@@ -181,14 +180,14 @@ const editDetailsFields = [
     'country.value',
 ];
 
-exports.editDetailsFields = editDetailsFields;
-
-exports.editDetailsFieldsTheHaveSubfields = editDetailsFields
+const editDetailsFieldsThatHaveSubfields = editDetailsFields
     .filter((field) => field.includes('.'))
     .map((field) => {
         const [fieldName] = field.split('.');
         return `${fieldName}.visibility`;
     });
+
+exports.editDetailsFields = [...editDetailsFields, ...editDetailsFieldsThatHaveSubfields];
 
 exports.validateSignupLocal = signupFieldsLocal.map((field) => userFormValidators[field]);
 

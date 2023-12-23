@@ -3,10 +3,7 @@ const User = require('../../models/User');
 const Post = require('../../models/Post');
 const { acceptFriendRequest, rejectFriendRequest } = require('../helpers/friend_requests');
 const { sortByEndDescendingThenStartDescending, extractPublicID } = require('../helpers/util');
-const {
-    editDetailsFields,
-    editDetailsFieldsTheHaveSubfields,
-} = require('../validation/form_validation');
+const { editDetailsFields } = require('../validation/form_validation');
 const { notFoundError } = require('../helpers/error_handling');
 const { validationResult } = require('express-validator');
 const { cloudinary } = require('../../cloudinary/cloudinary');
@@ -86,28 +83,34 @@ exports.editDetail = asyncHandler(async (req, res) => {
     }
 
     // set up update document
-    const newUserDetails = { details: {} };
+    const newUserDetails = {};
     editDetailsFields.forEach((field) => {
-        if (field === 'handle' || field === 'email') {
-            newUserDetails[field] = req.body[field];
-        } else if (field === 'firstName' || field === 'lastName') {
-            newUserDetails.details[field] = req.body[field];
+        if (field === 'handle') {
+            newUserDetails.handle = req.body.handle;
         } else {
-            const [fieldName, subField] = field.split('.');
-            newUserDetails.details[field] = req.body[fieldName][subField];
+            newUserDetails[`details.${field}`] = req.body[field];
         }
     });
-    editDetailsFieldsTheHaveSubfields.forEach((field) => {
-        const [fieldName, subField] = field.split('.');
-        newUserDetails.details[field] = req.body[fieldName][subField];
-    });
 
-    const updatedUser = await User.findByIdAndUpdate(_id, newUserDetails, { new: true }).exec();
+    const updatedUser = await User.findByIdAndUpdate(_id, newUserDetails, { new: true })
+        .select('-auth')
+        .exec();
 
     if (!updatedUser) {
         res.status(404).json(notFoundError);
     } else {
-        res.json(updatedUser);
+        const { firstName, lastName, ...hideableDetails } = updatedUser.details;
+
+        res.json({
+            updatedUser: {
+                _id: updatedUser._id,
+                handle: updatedUser.handle,
+                profilePicture: updatedUser.profilePicture,
+                galleryIsHidden: updatedUser.galleryIsHidden,
+                name: `${firstName} ${lastName}`,
+                ...hideableDetails,
+            },
+        });
     }
 });
 
