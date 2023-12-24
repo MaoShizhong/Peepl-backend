@@ -93,24 +93,13 @@ exports.editDetail = asyncHandler(async (req, res) => {
     });
 
     const updatedUser = await User.findByIdAndUpdate(_id, newUserDetails, { new: true })
-        .select('-auth')
+        .select('-auth -friends -galleryIsHidden -tokens')
         .exec();
 
     if (!updatedUser) {
         res.status(404).json(notFoundError);
     } else {
-        const { firstName, lastName, ...hideableDetails } = updatedUser.details;
-
-        res.json({
-            updatedUser: {
-                _id: updatedUser._id,
-                handle: updatedUser.handle,
-                profilePicture: updatedUser.profilePicture,
-                galleryIsHidden: updatedUser.galleryIsHidden,
-                name: `${firstName} ${lastName}`,
-                ...hideableDetails,
-            },
-        });
+        res.json({ updatedUser });
     }
 });
 
