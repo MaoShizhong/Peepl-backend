@@ -118,14 +118,17 @@ const userFormValidators = {
         .custom((array) =>
             // noSQL injection protection
             array.every((entry) => {
-                const requiredFields = ['institution', 'course', 'start', 'end'];
+                const requiredFields = ['institution', 'course', 'start', 'end', 'id'];
                 const objectFields = Object.keys(entry);
                 const objectValues = Object.values(entry);
 
                 return (
                     objectFields.length === requiredFields.length &&
                     objectFields.every((field) => requiredFields.includes(field)) &&
-                    objectValues.every((value) => value === null || typeof value === 'string')
+                    objectValues.every(
+                        (value) =>
+                            value === null || (typeof value === 'string' && value.trim() !== '')
+                    )
                 );
             })
         )
@@ -139,14 +142,19 @@ const userFormValidators = {
         .custom((array) =>
             // noSQL injection protection
             array.every((entry) => {
-                const requiredFields = ['title', 'company', 'start', 'end'];
+                const requiredFields = ['title', 'company', 'start', 'end', 'id'];
                 const objectFields = Object.keys(entry);
                 const objectValues = Object.values(entry);
+
+                console.log(entry);
 
                 return (
                     objectFields.length === requiredFields.length &&
                     objectFields.every((field) => requiredFields.includes(field)) &&
-                    objectValues.every((value) => value === null || typeof value === 'string')
+                    objectValues.every(
+                        (value) =>
+                            value === null || (typeof value === 'string' && value.trim() !== '')
+                    )
                 );
             })
         )
@@ -154,10 +162,11 @@ const userFormValidators = {
             'Each employment entry must contain a job title, company and start date. End date may be left blank if ongoing.'
         ),
 
-    visibility: body(
-        'DOB.visibility',
-        'Date of birth visibility must either be "everyone", "friends" or "hidden".'
-    ).custom((value) => ['everyone', 'friends', 'hidden'].includes(value)),
+    visibility: (field) =>
+        body(
+            `${field}.visibility`,
+            'Date of birth visibility must either be "everyone", "friends" or "hidden".'
+        ).custom((value) => ['everyone', 'friends', 'hidden'].includes(value)),
 };
 
 const signupFieldsLocal = [
@@ -198,10 +207,10 @@ exports.validateEditDetails = [
 
 exports.validateEditEducation = [
     userFormValidators['education.value'],
-    userFormValidators.visibility,
+    userFormValidators.visibility('education'),
 ];
 
 exports.validateEditEmployment = [
     userFormValidators['employment.value'],
-    userFormValidators.visibility,
+    userFormValidators.visibility('employment'),
 ];

@@ -106,6 +106,13 @@ exports.editDetail = asyncHandler(async (req, res) => {
 exports.editEducation = asyncHandler(async (req, res) => {
     const { education } = req.body;
     const { _id } = req.user;
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Send only the first form error back to user
+        const error = errors.array()[0].msg;
+        return res.status(400).json({ error });
+    }
 
     education.value.sort(sortByEndDescendingThenStartDescending);
 
@@ -131,6 +138,13 @@ exports.editEducation = asyncHandler(async (req, res) => {
 exports.editEmployment = asyncHandler(async (req, res) => {
     const { employment } = req.body;
     const { _id } = req.user;
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Send only the first form error back to user
+        const error = errors.array()[0].msg;
+        return res.status(400).json({ error });
+    }
 
     employment.value.sort(sortByEndDescendingThenStartDescending);
 

@@ -2,6 +2,7 @@ const { model, Schema } = require('mongoose');
 
 const EmploymentSchema = new Schema(
     {
+        id: String,
         title: String,
         company: String,
         start: Date,
@@ -12,6 +13,7 @@ const EmploymentSchema = new Schema(
 
 const EducationSchema = new Schema(
     {
+        id: String,
         institution: String,
         course: String,
         start: Date,
