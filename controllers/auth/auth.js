@@ -6,6 +6,7 @@ const { ObjectId } = require('mongoose').Types;
 const { generateUsername } = require('unique-username-generator');
 const { cloudinary } = require('../../cloudinary/cloudinary');
 const fs = require('fs');
+const { censorUserEmail } = require('../helpers/util');
 
 exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
@@ -64,7 +65,7 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
         email: email,
         profilePicture: profilePictureURL,
         auth: {
-            strategies: ['local'],
+            strategy: 'local',
             password: hashedPassword,
         },
         details: {
@@ -82,9 +83,17 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
 });
 
 exports.login = (req, res) => {
-    const { _id, handle, profilePicture, email, details, isDemo, isGithubOnly } = req.user;
+    const { _id, handle, profilePicture, email, details, isDemo, isGithub } = req.user;
 
-    res.status(201).json({ _id, handle, profilePicture, email, details, isDemo, isGithubOnly });
+    res.status(201).json({
+        _id,
+        handle,
+        profilePicture,
+        email: censorUserEmail(email),
+        details,
+        isDemo,
+        isGithub,
+    });
 };
 
 exports.logout = (req, res) => {

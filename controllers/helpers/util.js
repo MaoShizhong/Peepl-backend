@@ -21,4 +21,33 @@ exports.extractPublicID = (url) => {
     const id = sections.at(-1).replace('.webp', '');
 
     return `${folder}/${id}`;
-}
+};
+
+exports.censorUserEmail = (email) => {
+    const atSymbol = email.indexOf('@');
+
+    const firstHalf = email.slice(0, atSymbol);
+    const secondHalf = email.slice(atSymbol);
+
+    let censoredFirstHalf;
+    switch (firstHalf.length) {
+        case 1:
+            censoredFirstHalf = '*';
+            break;
+        case 2:
+            censoredFirstHalf = `${firstHalf[0]}*`;
+            break;
+        case 3:
+            censoredFirstHalf = `${firstHalf[0]}**`;
+            break;
+        case 4:
+            censoredFirstHalf = `${firstHalf[0]}**${firstHalf.at(-1)}`;
+            break;
+        default:
+            censoredFirstHalf = `${firstHalf.slice(0, 2)}${'*'.repeat(
+                firstHalf.length - 3
+            )}${firstHalf.at(-1)}`;
+    }
+
+    return `${censoredFirstHalf}${secondHalf}`;
+};

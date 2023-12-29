@@ -16,7 +16,7 @@ exports.deserialize = async (id, done) => {
             email: user.email,
             details: user.details,
             isDemo: user.isDemo,
-            isGithubOnly: !user.auth.strategies.includes('local'),
+            isGithub: user.auth.strategy === 'github',
         });
     } catch (error) {
         done(error);

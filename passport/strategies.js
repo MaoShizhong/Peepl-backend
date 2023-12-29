@@ -4,10 +4,11 @@ const User = require('../models/User');
 const argon2 = require('argon2');
 
 exports.localStrategy = new LocalStrategy(
-    { usernameField: 'email' }, // using `email` form field to sign in instead of username
+    // using `email` form field to sign in instead of username
+    { usernameField: 'email' },
     async (email, password, done) => {
         try {
-            const user = await User.findOne({ email: email }).exec();
+            const user = await User.findOne({ email: email, 'auth.strategy': 'local' }).exec();
 
             if (!user) {
                 return done(null, false);
@@ -21,10 +22,11 @@ exports.localStrategy = new LocalStrategy(
             return done(null, {
                 _id: user._id.valueOf(),
                 handle: user.handle,
+                profilePicture: user.profilePicture,
                 email: user.email,
                 details: user.details,
                 isDemo: user.isDemo,
-                isGithubOnly: !user.auth.strategies.includes('local'),
+                isGithub: false,
             });
         } catch (err) {
             return done(err);
