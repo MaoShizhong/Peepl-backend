@@ -6,12 +6,14 @@ const {
     validateEditDetails,
     validateEditEducation,
     validateEditEmployment,
+    validateFields,
 } = require('../controllers/validation/form_validation');
 const {
     validateObjectIDs,
     validateFriendQueryObjectIDs,
     verifySameUser,
 } = require('../controllers/validation/user_verify');
+const { sendEmail } = require('../controllers/auth/email_sending');
 
 const userRouter = Router();
 
@@ -32,6 +34,8 @@ userRouter.get('/:handle', user.getSpecificUser, user.getRestOfProfile);
 userRouter.use('/:userID', validateObjectIDs);
 userRouter.use('/:userID/posts/:postID', validateObjectIDs); // previous will not check :postID
 
+userRouter.delete('/:userID', verifySameUser, sendEmail('accountDeletion'));
+
 /*
     Account details
 */
@@ -44,6 +48,13 @@ userRouter.put(
     verifySameUser,
     user.changeProfilePicture
 );
+userRouter.patch(
+    '/:userID/email',
+    verifySameUser,
+    validateFields('email', 'password'),
+    user.changeEmail
+);
+userRouter.patch('/:userID/password', verifySameUser, sendEmail('passwordReset'));
 
 /*
     Account gallery

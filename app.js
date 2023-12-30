@@ -44,7 +44,7 @@ passport.deserializeUser(deserialize);
 /*
     - Initialise middleware
 */
-
+app.disable('x-powered-by')
 app.use(logger('dev'));
 app.set('trust proxy', 1);
 app.use(express.json());
@@ -59,13 +59,14 @@ app.use(
 );
 app.use(
     session({
+        name: process.env.COOKIE_NAME,
         secret: process.env.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
         store: MongoStore.create({ client: mongoose.connection.getClient() }),
         cookie: {
             secure: process.env.MODE === 'prod',
-            maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days (refreshed every successful request)
+            maxAge: COOKIE_MAX_AGE, // 2 days (refreshed every successful request)
             httpOnly: process.env.MODE === 'prod',
             sameSite: process.env.MODE === 'prod' ? 'none' : 'lax',
         },
@@ -78,6 +79,7 @@ app.use(passport.session());
 */
 const authRouter = require('./routes/auth_router');
 const userRouter = require('./routes/user_router');
+const { COOKIE_MAX_AGE } = require('./controllers/helpers/constants');
 
 app.use('/auth', authRouter);
 app.use('/users', userRouter);

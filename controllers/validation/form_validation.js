@@ -214,3 +214,7 @@ exports.validateEditEmployment = [
     userFormValidators['employment.value'],
     userFormValidators.visibility('employment'),
 ];
+
+exports.validateFields = (...fields) => {
+    return fields.map((field) => userFormValidators[field]);
+};

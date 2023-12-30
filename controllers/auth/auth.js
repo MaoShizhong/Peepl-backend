@@ -2,11 +2,15 @@ const asyncHandler = require('express-async-handler');
 const { validationResult } = require('express-validator');
 const argon2 = require('argon2');
 const User = require('../../models/User');
+const Post = require('../../models/Post');
+const Comment = require('../../models/Comment');
+const Photo = require('../../models/Photo');
 const { ObjectId } = require('mongoose').Types;
 const { generateUsername } = require('unique-username-generator');
 const { cloudinary } = require('../../cloudinary/cloudinary');
 const fs = require('fs');
 const { censorUserEmail } = require('../helpers/util');
+const { createHash } = require('node:crypto');
 
 exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
@@ -82,6 +86,69 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
     next();
 });
 
+exports.setNewPassword = asyncHandler(async (req, res, next) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Send only the first form error back to user
+        const error = errors.array()[0].msg;
+        return res.status(400).json({ error });
+    }
+
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const hash = createHash('sha3-256');
+    const hashedToken = hash.update(token).digest('base64');
+
+    const hashedPassword = await argon2.hash(password);
+
+    const updatedUser = await User.findOneAndUpdate(
+        { 'tokens.passwordReset.token': hashedToken },
+        { $set: { password: hashedPassword }, $unset: { 'tokens.passwordReset': 1 } },
+        { new: true }
+    ).exec();
+
+    if (!updatedUser) {
+        res.json(404).json({ message: 'Invalid user. Could not change password.' });
+    } else {
+        // force logout
+        next();
+    }
+});
+
+exports.deleteUser = asyncHandler(async (req, res, next) => {
+    const { token } = req.params;
+
+    const hash = createHash('sha3-256');
+    const hashedToken = hash.update(token).digest('base64');
+
+    const { _id: deletedUserID } = await User.findOneAndDelete({
+        'tokens.accountDeletion.token': hashedToken,
+        'tokens.accountDeletion.used': true,
+    }).exec();
+
+    const postsToDelete = await Post.find({ author: deletedUserID }).exec();
+
+    if (!deletedUserID) {
+        res.status(404).json({ error: 'Invalid user.' });
+        return;
+    }
+
+    // delete all user's cloudinary photos and Peepl data
+    await Promise.all([
+        Post.deleteMany({ author: deletedUserID }).exec(),
+        Comment.deleteMany({ post: { $in: postsToDelete } }).exec(),
+        Comment.updateMany({ author: deletedUserID }, { body: '', isDeleted: true }).exec(),
+        Photo.deleteMany({ user: deletedUserID }).exec(),
+        cloudinary.api.delete_resources_by_prefix(deletedUserID),
+        cloudinary.api.delete_folder(deletedUserID),
+    ]);
+
+    // force logout/session destroy
+    next();
+});
+
 exports.login = (req, res) => {
     const { _id, handle, profilePicture, email, details, isDemo, isGithub } = req.user;
 
@@ -98,7 +165,7 @@ exports.login = (req, res) => {
 
 exports.logout = (req, res) => {
     req.session.destroy();
-    res.clearCookie('connect.sid', {
+    res.clearCookie(process.env.COOKIE_NAME, {
         secure: process.env.MODE === 'prod',
         httpOnly: process.env.MODE === 'prod',
         sameSite: process.env.MODE === 'prod' ? 'none' : 'lax',
