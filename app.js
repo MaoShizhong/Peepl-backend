@@ -44,7 +44,9 @@ passport.deserializeUser(deserialize);
 /*
     - Initialise middleware
 */
-app.disable('x-powered-by')
+const { COOKIE_MAX_AGE } = require('./controllers/helpers/constants');
+
+app.disable('x-powered-by');
 app.use(logger('dev'));
 app.set('trust proxy', 1);
 app.use(express.json());
@@ -79,7 +81,6 @@ app.use(passport.session());
 */
 const authRouter = require('./routes/auth_router');
 const userRouter = require('./routes/user_router');
-const { COOKIE_MAX_AGE } = require('./controllers/helpers/constants');
 
 app.use('/auth', authRouter);
 app.use('/users', userRouter);

@@ -44,8 +44,8 @@ exports.sendEmailWithLink = (type, recipient, token) => {
     `,
         attachments: [
             {
-                filename: 'peepl-logo.png',
-                path: `${__dirname}/peepl-logo.png`,
+                filename: 'peepl.png',
+                path: `${__dirname}/peepl.png`,
                 cid: 'peeplLogo',
             },
         ],
