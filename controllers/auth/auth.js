@@ -35,21 +35,25 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
     // Allows easier bulk asset deletion by folder later upon user account deletion
     const newUserId = new ObjectId();
 
-    let path = `${__dirname}/default_profile_picture.jpg`;
-    if (req.file) path = req.file.path;
+    let profilePictureURL = null;
+    if (req.file) {
+        const { path } = req.file.path;
 
-    // upload with standardised profile picture format:
-    // center-square crop then scale to 400x400 - webp for smaller file size
-    const result = await cloudinary.uploader.upload(path, {
-        folder: newUserId,
-        eager: { crop: 'fill', height: 400, width: 400 },
-        format: 'webp',
-    });
+        // upload with standardised profile picture format:
+        // center-square crop then scale to 400x400 - webp for smaller file size
+        const result = await cloudinary.uploader.upload(path, {
+            folder: newUserId,
+            eager: { crop: 'fill', height: 400, width: 400 },
+            format: 'webp',
+        });
 
-    const profilePictureURL = result.eager[0].secure_url;
+        profilePictureURL = result.eager[0].secure_url;
 
-    // delete temp uploaded image file once uploaded to cloudinary
-    if (req.file) fs.rmSync(`${process.cwd()}/${path}`);
+        // delete temp uploaded image file once uploaded to cloudinary
+        fs.rmSync(`${process.cwd()}/${path}`);
+    } else {
+        await cloudinary.api.create_folder(newUserId);
+    }
 
     // prevent the tiniest of tiniest of chances that an auto-generated handle
     // collides with an existing one
