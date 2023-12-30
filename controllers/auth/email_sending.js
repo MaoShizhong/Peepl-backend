@@ -19,7 +19,7 @@ exports.sendEmail = (tokenType) =>
 
         // Storing hashed token prevents anyone other than the recipient getting a usable reset token
         // Expiry set to 10 minutes from generation
-        const updatedUser = await User.findOneAndUpdate(_id, {
+        const updatedUser = await User.findByIdAndUpdate(_id, {
             [`tokens.${tokenType}`]: {
                 token: hashedToken,
                 expiry: new Date(Date.now() + ONE_TIME_TOKEN_EXPIRY),

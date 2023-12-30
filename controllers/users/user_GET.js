@@ -110,7 +110,7 @@ exports.getRestOfProfile = asyncHandler(async (req, res) => {
     const { _id } = req.profile.user;
 
     const [user, wallPosts] = await Promise.all([
-        User.findOne(_id, 'friends -_id')
+        User.findById(_id, 'friends -_id')
             .populate({
                 path: 'friends.user',
                 options: { projection: 'details.firstName details.lastName profilePicture handle' },

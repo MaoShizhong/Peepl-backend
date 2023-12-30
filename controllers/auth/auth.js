@@ -35,23 +35,21 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
     // Allows easier bulk asset deletion by folder later upon user account deletion
     const newUserId = new ObjectId();
 
-    let profilePictureURL = null;
-    if (req.file) {
-        const { path } = req.file;
+    let path = `${__dirname}/default_profile_picture.jpg`;
+    if (req.file) path = req.file.path;
 
-        // upload with standardised profile picture format:
-        // center-square crop then scale to 400x400 - webp for smaller file size
-        const result = await cloudinary.uploader.upload(path, {
-            folder: newUserId,
-            eager: { crop: 'fill', height: 400, width: 400 },
-            format: 'webp',
-        });
+    // upload with standardised profile picture format:
+    // center-square crop then scale to 400x400 - webp for smaller file size
+    const result = await cloudinary.uploader.upload(path, {
+        folder: newUserId,
+        eager: { crop: 'fill', height: 400, width: 400 },
+        format: 'webp',
+    });
 
-        profilePictureURL = result.eager[0].secure_url;
+    const profilePictureURL = result.eager[0].secure_url;
 
-        // delete temp image file once uploaded to cloudinary
-        fs.rmSync(`${process.cwd()}/${path}`);
-    }
+    // delete temp uploaded image file once uploaded to cloudinary
+    if (req.file) fs.rmSync(`${process.cwd()}/${path}`);
 
     // prevent the tiniest of tiniest of chances that an auto-generated handle
     // collides with an existing one
@@ -128,6 +126,8 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
         'tokens.accountDeletion.used': true,
     }).exec();
 
+    console.log('Deteled', deletedUserID);
+
     const postsToDelete = await Post.find({ author: deletedUserID }).exec();
 
     if (!deletedUserID) {
@@ -135,15 +135,21 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
         return;
     }
 
-    // delete all user's cloudinary photos and Peepl data
+    // delete all user's cloudinary photos and Peepl data/remove from friends lists
     await Promise.all([
         Post.deleteMany({ author: deletedUserID }).exec(),
         Comment.deleteMany({ post: { $in: postsToDelete } }).exec(),
         Comment.updateMany({ author: deletedUserID }, { body: '', isDeleted: true }).exec(),
         Photo.deleteMany({ user: deletedUserID }).exec(),
-        cloudinary.api.delete_resources_by_prefix(deletedUserID),
-        cloudinary.api.delete_folder(deletedUserID),
+        User.updateMany(
+            { 'friends.user': deletedUserID },
+            { $pull: { friends: { user: deletedUserID } } }
+        ).exec(),
+        cloudinary.api.delete_resources_by_prefix(deletedUserID.valueOf()),
     ]);
+
+    // can't delete cloudinary folder until it is empty
+    await cloudinary.api.delete_folder(deletedUserID.valueOf());
 
     // force logout/session destroy
     next();

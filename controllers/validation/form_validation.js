@@ -146,8 +146,6 @@ const userFormValidators = {
                 const objectFields = Object.keys(entry);
                 const objectValues = Object.values(entry);
 
-                console.log(entry);
-
                 return (
                     objectFields.length === requiredFields.length &&
                     objectFields.every((field) => requiredFields.includes(field)) &&
