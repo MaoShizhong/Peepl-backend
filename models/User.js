@@ -120,4 +120,28 @@ const UserSchema = new Schema(
     { toJSON: { virtuals: true }, versionKey: false }
 );
 
-module.exports = model('user', UserSchema);
+const User = model('user', UserSchema);
+User.watch().on('change', async ({ operationType, documentKey, updateDescription }) => {
+    if (operationType !== 'update') return;
+
+    // target only friend requests
+    const updatedFieldPropertyName = Object.keys(updateDescription.updatedFields)[0];
+    if (!updatedFieldPropertyName.startsWith('friend')) return;
+
+    // target only the friend request on the side of the user to send the notification to
+    const newFriendEntry = updateDescription.updatedFields[updatedFieldPropertyName];
+    if (newFriendEntry.status !== 'incoming') return;
+
+    const idOfUserToNotify = documentKey._id.valueOf();
+    const requester = await User.findById(
+        newFriendEntry.user,
+        'handle details.firstName details.lastName'
+    ).exec();
+
+    console.log('Send notification to:', idOfUserToNotify);
+    console.log('FR sent by:', requester);
+
+    // ! SEND NOTIFICATION HERE
+});
+
+module.exports = User;

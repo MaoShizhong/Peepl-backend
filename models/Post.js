@@ -13,4 +13,24 @@ const PostSchema = new Schema(
     { versionKey: false }
 );
 
-module.exports = model('post', PostSchema);
+const Post = model('post', PostSchema);
+Post.watch().on('change', async ({ operationType, fullDocument: newPost }) => {
+    if (operationType !== 'insert') return;
+
+    const populatedNewPost = await Post.findById(newPost._id)
+        .populate('author', 'handle details.firstName details.lastName profilePicture')
+        .select('-body -likes')
+        .exec();
+
+    // user posted on their own wall - notify their friends of new feed post
+    if (newPost.wall.valueOf() === newPost.author.valueOf()) {
+        // ! NOTIFY FEEDS OF NEW POST
+        console.log('New wall post:', populatedNewPost);
+    }
+    // send header notification as user posted on another user's wall
+    else {
+        // ! SEND WALL TARGET HEADER NOTIFICATION OF NEW WALL POST
+    }
+});
+
+module.exports = Post;
