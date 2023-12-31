@@ -130,8 +130,6 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
         'tokens.accountDeletion.used': true,
     }).exec();
 
-    console.log('Deteled', deletedUserID);
-
     const postsToDelete = await Post.find({ author: deletedUserID }).exec();
 
     if (!deletedUserID) {

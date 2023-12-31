@@ -145,6 +145,23 @@ exports.getRestOfProfile = asyncHandler(async (req, res) => {
     res.json(req.profile);
 });
 
+exports.getIncomingFriendRequests = asyncHandler(async (req, res) => {
+    const { _id } = req.user;
+
+    const { friends } = await User.findById(_id, 'friends -_id')
+        .populate({
+            path: 'friends.user',
+            options: { projection: 'details.firstName details.lastName profilePicture handle' },
+        })
+        .exec();
+
+    const incomingRequests = friends
+        .filter((request) => request.status === 'incoming')
+        .map((request) => request.user);
+
+    res.json({ incomingRequests });
+});
+
 exports.getFeed = asyncHandler(async (req, res) => {
     const { _id } = req.user;
     const { page } = req.query;

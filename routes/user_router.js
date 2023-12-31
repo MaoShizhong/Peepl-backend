@@ -84,6 +84,7 @@ userRouter.delete('/:userID/posts/:postID/likes', user.unlikePost);
 */
 userRouter.use('/:userID/friends', verifySameUser, validateFriendQueryObjectIDs);
 
+userRouter.get('/:userID/friends', user.getIncomingFriendRequests);
 userRouter.post('/:userID/friends', user.sendFriendRequest);
 userRouter.put('/:userID/friends', user.respondToFriendRequest);
 userRouter.delete('/:userID/friends/:friendID', user.removeFriend);

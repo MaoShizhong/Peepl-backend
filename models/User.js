@@ -1,4 +1,5 @@
 const { model, Schema } = require('mongoose');
+const { sendIncomingFriendRequestNotification } = require('../controllers/SSE/send');
 
 const EmploymentSchema = new Schema(
     {
@@ -133,15 +134,12 @@ User.watch().on('change', async ({ operationType, documentKey, updateDescription
     if (newFriendEntry.status !== 'incoming') return;
 
     const idOfUserToNotify = documentKey._id.valueOf();
-    const requester = await User.findById(
+    const requesterDetails = await User.findById(
         newFriendEntry.user,
-        'handle details.firstName details.lastName'
+        'details.firstName details.lastName profilePicture handle'
     ).exec();
 
-    console.log('Send notification to:', idOfUserToNotify);
-    console.log('FR sent by:', requester);
-
-    // ! SEND NOTIFICATION HERE
+    sendIncomingFriendRequestNotification(idOfUserToNotify, requesterDetails);
 });
 
 module.exports = User;
