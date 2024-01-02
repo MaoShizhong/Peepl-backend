@@ -4,6 +4,7 @@ const User = require('../../models/User');
 const multer = require('multer');
 const { fromFile: checkFileType } = require('file-type');
 const { rmSync } = require('fs');
+const { POST_CHAR_LIMIT } = require('../helpers/constants');
 
 // If no image file submitted, multer will do nothing and simply call next()
 exports.handleImageFile = (imageFormField) => {
@@ -216,3 +217,9 @@ exports.validateEditEmployment = [
 exports.validateFields = (...fields) => {
     return fields.map((field) => userFormValidators[field]);
 };
+
+exports.validatePostForm = body('body')
+    .notEmpty()
+    .withMessage('Post cannot be empty.')
+    .isLength({ max: POST_CHAR_LIMIT })
+    .withMessage(`Max. ${POST_CHAR_LIMIT} characters.`);

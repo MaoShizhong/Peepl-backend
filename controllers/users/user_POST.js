@@ -3,9 +3,8 @@ const User = require('../../models/User');
 const Post = require('../../models/Post');
 const Photo = require('../../models/Photo');
 const { notFoundError } = require('../helpers/error_handling');
-const { body, validationResult } = require('express-validator');
+const { validationResult } = require('express-validator');
 const { cloudinary } = require('../../cloudinary/cloudinary');
-const { POST_CHAR_LIMIT } = require('../helpers/constants');
 const fs = require('fs');
 
 exports.sendFriendRequest = asyncHandler(async (req, res) => {
@@ -33,12 +32,6 @@ exports.sendFriendRequest = asyncHandler(async (req, res) => {
 
     res.json({ message: 'Friend request sent successfully.' });
 });
-
-exports.validatePostForm = body('body')
-    .notEmpty()
-    .withMessage('Post cannot be empty.')
-    .isLength({ max: POST_CHAR_LIMIT })
-    .withMessage(`Max. ${POST_CHAR_LIMIT} characters.`);
 
 exports.writePostToWall = asyncHandler(async (req, res) => {
     const { userID } = req.params;
@@ -68,24 +61,6 @@ exports.writePostToWall = asyncHandler(async (req, res) => {
     await wallPost.populate('author', 'handle details.firstName details.lastName profilePicture');
 
     res.status(201).json({ post: wallPost });
-});
-
-exports.likePost = asyncHandler(async (req, res) => {
-    const { postID } = req.params;
-    const { _id } = req.user;
-
-    // Add like only if post is not already liked by the user
-    const post = await Post.findOneAndUpdate(
-        { _id: postID, likes: { $ne: _id } },
-        { $push: { likes: _id } },
-        { new: true }
-    ).exec();
-
-    if (!post) {
-        res.status(400).json({ error: 'Post already liked.' });
-    } else {
-        res.json({ post });
-    }
 });
 
 exports.addPhotoToGallery = asyncHandler(async (req, res) => {

@@ -1,6 +1,5 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
-const Post = require('../../models/Post');
 const { acceptFriendRequest, rejectFriendRequest } = require('../helpers/friend_requests');
 const { sortByEndDescendingThenStartDescending, extractPublicID } = require('../helpers/util');
 const { editDetailsFields } = require('../validation/form_validation');
@@ -45,31 +44,6 @@ exports.respondToFriendRequest = asyncHandler(async (req, res) => {
     }
 
     res.end();
-});
-
-exports.editPost = asyncHandler(async (req, res) => {
-    const { postID } = req.params;
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-        // Send only the first form error back to user
-        const error = errors.array()[0].msg;
-        return res.status(400).json({ error });
-    }
-
-    const editedPost = await Post.findByIdAndUpdate(
-        postID,
-        { body: req.body.body, isEdited: true },
-        { new: true }
-    )
-        .populate('author', 'handle details.firstName details.lastName profilePicture')
-        .exec();
-
-    if (!editedPost) {
-        res.status(404).json(notFoundError);
-    } else {
-        res.json({ editedPost });
-    }
 });
 
 exports.editDetail = asyncHandler(async (req, res) => {

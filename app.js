@@ -81,10 +81,12 @@ app.use(passport.session());
 */
 const authRouter = require('./routes/auth_router');
 const userRouter = require('./routes/user_router');
+const postRouter = require('./routes/post_router');
 const sseRouter = require('./routes/SSE_router');
 
 app.use('/auth', authRouter);
 app.use('/users', userRouter);
+app.use('/posts', postRouter);
 app.use('/notifications', sseRouter);
 
 /*

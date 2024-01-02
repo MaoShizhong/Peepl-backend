@@ -7,6 +7,7 @@ const {
     validateEditEducation,
     validateEditEmployment,
     validateFields,
+    validatePostForm,
 } = require('../controllers/validation/form_validation');
 const {
     validateObjectIDs,
@@ -34,55 +35,56 @@ userRouter.get('/:handle', user.getSpecificUser, user.getRestOfProfile);
 userRouter.use('/:userID', validateObjectIDs);
 userRouter.use('/:userID/posts/:postID', validateObjectIDs); // previous will not check :postID
 
-userRouter.delete('/:userID', verifySameUser, sendEmail('accountDeletion'));
+userRouter.delete('/:userID', verifySameUser(), sendEmail('accountDeletion'));
 
 /*
     Account details
 */
-userRouter.put('/:userID', verifySameUser, validateEditDetails, user.editDetail);
-userRouter.put('/:userID/education', verifySameUser, validateEditEducation, user.editEducation);
-userRouter.put('/:userID/employment', verifySameUser, validateEditEmployment, user.editEmployment);
+userRouter.put('/:userID', verifySameUser(), validateEditDetails, user.editDetail);
+userRouter.put('/:userID/education', verifySameUser(), validateEditEducation, user.editEducation);
+userRouter.put(
+    '/:userID/employment',
+    verifySameUser(),
+    validateEditEmployment,
+    user.editEmployment
+);
 userRouter.put(
     '/:userID/profile-picture',
     handleImageFile('profilePicture'),
-    verifySameUser,
+    verifySameUser(),
     user.changeProfilePicture
 );
 userRouter.patch(
     '/:userID/email',
-    verifySameUser,
+    verifySameUser(),
     validateFields('email', 'password'),
     user.changeEmail
 );
-userRouter.patch('/:userID/password', verifySameUser, sendEmail('passwordReset'));
+userRouter.patch('/:userID/password', verifySameUser(), sendEmail('passwordReset'));
 
 /*
     Account gallery
 */
 userRouter.get('/:userID/gallery', user.getGallery);
-userRouter.patch('/:userID/gallery', verifySameUser, user.toggleGalleryVisibility);
+userRouter.patch('/:userID/gallery', verifySameUser(), user.toggleGalleryVisibility);
 userRouter.post(
     '/:userID/gallery',
     handleImageFile('photo'),
-    verifySameUser,
+    verifySameUser(),
     user.addPhotoToGallery
 );
-userRouter.delete('/:userID/gallery/:photoID', verifySameUser, user.deletePhoto);
+userRouter.delete('/:userID/gallery/:photoID', verifySameUser(), user.deletePhoto);
 
 /*
-    Wall and posts
+    Feed/wall
 */
-userRouter.get('/:userID/feed', verifySameUser, user.getFeed);
-userRouter.post('/:userID/posts', user.validatePostForm, user.writePostToWall);
-userRouter.post('/:userID/posts/:postID/likes', user.likePost);
-userRouter.put('/:userID/posts/:postID', verifySameUser, user.validatePostForm, user.editPost);
-userRouter.delete('/:userID/posts/:postID', verifySameUser, user.deletePost);
-userRouter.delete('/:userID/posts/:postID/likes', user.unlikePost);
+userRouter.get('/:userID/feed', verifySameUser(), user.getFeed);
+userRouter.post('/:userID/posts', validatePostForm, user.writePostToWall);
 
 /*
     Friends
 */
-userRouter.use('/:userID/friends', verifySameUser, validateFriendQueryObjectIDs);
+userRouter.use('/:userID/friends', verifySameUser(), validateFriendQueryObjectIDs);
 
 userRouter.get('/:userID/friends', user.getIncomingFriendRequests);
 userRouter.post('/:userID/friends', user.sendFriendRequest);

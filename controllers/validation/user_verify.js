@@ -24,18 +24,20 @@ exports.validateFriendQueryObjectIDs = (req, res, next) => {
     next();
 };
 
-exports.verifySameUser = (req, res, next) => {
-    const { userID } = req.params;
-    const { _id } = req.user;
+exports.verifySameUser = ({ userInQuery } = { userInQuery: false }) => {
+    return (req, res, next) => {
+        const { userID } = userInQuery ? req.query : req.params;
+        const { _id } = req.user;
 
-    if (userID === _id) return next();
+        if (userID === _id) return next();
 
-    /* multer must handle image file before same-user verification
+        /* multer must handle image file before same-user verification
     else it will throw a "write EPIPE" error, therefore any temp image
     data stored on disk must be deleted as request will end */
-    if (req.file) {
-        fs.rmSync(`${process.cwd()}/${req.file.path}`);
-    }
+        if (req.file) {
+            fs.rmSync(`${process.cwd()}/${req.file.path}`);
+        }
 
-    res.status(403).json(unauthorisedError);
+        res.status(403).json(unauthorisedError);
+    };
 };
