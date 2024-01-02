@@ -140,8 +140,9 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
     // delete all user's cloudinary photos and Peepl data/remove from friends lists
     await Promise.all([
         Post.deleteMany({ author: deletedUserID }).exec(),
-        Comment.deleteMany({ post: { $in: postsToDelete } }).exec(),
-        Comment.updateMany({ author: deletedUserID }, { body: '', isDeleted: true }).exec(),
+        Comment.deleteMany({
+            $or: [{ post: { $in: postsToDelete } }, { author: deletedUserID }],
+        }).exec(),
         Photo.deleteMany({ user: deletedUserID }).exec(),
         User.updateMany(
             { 'friends.user': deletedUserID },

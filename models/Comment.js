@@ -6,9 +6,6 @@ const CommentSchema = new Schema(
         author: { type: Schema.Types.ObjectId, ref: 'user', required: true },
         timestamp: { type: Date, required: true },
         body: { type: String, required: true },
-        replies: [{ type: Schema.Types.ObjectId, ref: 'comment' }],
-        isReply: { type: Boolean, default: false },
-        isDeleted: { type: Boolean, default: false },
     },
     { versionKey: false }
 );
