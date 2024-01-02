@@ -5,6 +5,7 @@ const Photo = require('../../models/Photo');
 const { notFoundError } = require('../helpers/error_handling');
 const { FEED_POSTS_PER_PAGE } = require('../helpers/constants');
 const { getFriendStatus } = require('../helpers/friend_requests');
+const Comment = require('../../models/Comment');
 
 exports.getAllUsers = asyncHandler(async (req, res) => {
     const { _id, handle } = req.user;
@@ -126,6 +127,25 @@ exports.getRestOfProfile = asyncHandler(async (req, res) => {
             .exec(),
     ]);
 
+    const wallPostIDs = wallPosts.map((post) => post.id);
+
+    const commentsOnWallPosts = await Comment.find({ post: { $in: wallPostIDs } })
+        .sort({ timestamp: 1 })
+        .populate({
+            path: 'author',
+            options: { projection: 'handle details.firstName details.lastName profilePicture' },
+        })
+        .exec();
+
+    const wallPostsWithComments = wallPosts.map((post) => {
+        return {
+            ...post.toObject(),
+            comments: commentsOnWallPosts
+                .filter((comment) => comment.post.valueOf() === post.id)
+                .slice(-6),
+        };
+    });
+
     const formattedFriendsList = user.friends.map((friend) => {
         return {
             user: {
@@ -140,7 +160,7 @@ exports.getRestOfProfile = asyncHandler(async (req, res) => {
     });
 
     req.profile.friends = formattedFriendsList;
-    req.profile.wall = wallPosts;
+    req.profile.wall = wallPostsWithComments;
 
     res.json(req.profile);
 });
@@ -183,7 +203,26 @@ exports.getFeed = asyncHandler(async (req, res) => {
         })
         .exec();
 
-    res.json({ feed: feedPosts });
+    const feedPostIDs = feedPosts.map((post) => post.id);
+
+    const commentsOnFeedPosts = await Comment.find({ post: { $in: feedPostIDs } })
+        .sort({ timestamp: 1 })
+        .populate({
+            path: 'author',
+            options: { projection: 'handle details.firstName details.lastName profilePicture' },
+        })
+        .exec();
+
+    const feedPostsWithComments = feedPosts.map((post) => {
+        return {
+            ...post.toObject(),
+            comments: commentsOnFeedPosts
+                .filter((comment) => comment.post.valueOf() === post.id)
+                .slice(-6),
+        };
+    });
+
+    res.json({ feed: feedPostsWithComments });
 });
 
 exports.getGallery = asyncHandler(async (req, res) => {
