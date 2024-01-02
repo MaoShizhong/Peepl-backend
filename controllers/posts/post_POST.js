@@ -1,7 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Comment = require('../../models/Comment');
 const { validationResult } = require('express-validator');
-const { notFoundError } = require('../helpers/error_handling');
 
 exports.addCommentToPost = asyncHandler(async (req, res) => {
     const { postID } = req.params;
@@ -22,6 +21,7 @@ exports.addCommentToPost = asyncHandler(async (req, res) => {
         body: body,
     });
     await newComment.save();
+    await newComment.populate('author', 'handle details.firstName details.lastName profilePicture');
 
     res.status(201).json({ newComment });
 });

@@ -220,6 +220,6 @@ exports.validateFields = (...fields) => {
 
 exports.validatePostForm = body('body')
     .notEmpty()
-    .withMessage('Post cannot be empty.')
+    .withMessage('Cannot be empty.')
     .isLength({ max: POST_CHAR_LIMIT })
     .withMessage(`Max. ${POST_CHAR_LIMIT} characters.`);
