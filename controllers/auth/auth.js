@@ -10,7 +10,7 @@ const { generateUsername } = require('unique-username-generator');
 const { cloudinary } = require('../../cloudinary/cloudinary');
 const fs = require('fs');
 const { censorUserEmail } = require('../helpers/util');
-const { createHash } = require('node:crypto');
+const { createHash, randomBytes } = require('node:crypto');
 
 exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
     const errors = validationResult(req);
@@ -188,3 +188,65 @@ exports.checkAuthenticated = (req, res, next) => {
         res.status(401).json({ error: 'Not logged in.' });
     }
 };
+
+/*
+    Cross-domain cookies will not be set on a redirect (browser security).
+    This works around that by sending a unique one-time login URL which will
+    then verify against a hashed stored login code (loginFromRedirect - line 178)
+    where that will set the right session cookie
+*/
+exports.redirectToDashboard = asyncHandler(async (req, res) => {
+    const baseRedirectURL =
+        process.env.MODE === 'prod' ? process.env.PROD_CLIENT : process.env.DEV_CLIENT;
+
+    const hash = createHash('sha3-256');
+    const token = randomBytes(32).toString('base64url');
+
+    const hashedToken = hash.update(token).digest('base64');
+
+    // Storing hashed token prevents anyone other than the recipient getting a usable reset token
+    // Token will be used immediately by the client once loaded, which should verify then log in
+    await User.findByIdAndUpdate(req.session.passport.user, {
+        'tokens.githubLoginToken': hashedToken,
+    }).exec();
+
+    const redirectURL = `${baseRedirectURL}/login/${token}`;
+    res.redirect(redirectURL);
+});
+
+exports.loginFromRedirect = asyncHandler(async (req, res) => {
+    const { token } = req.params;
+
+    const hash = createHash('sha3-256');
+    const hashedToken = hash.update(token).digest('base64');
+
+    // Delete token immediately
+    const existingUser = await User.findOneAndUpdate(
+        { 'tokens.githubLoginToken': hashedToken },
+        { $unset: { 'tokens.githubLoginToken': 1 } },
+        { new: true }
+    ).exec();
+
+    if (!existingUser) {
+        res.status(404).end();
+    } else {
+        /*
+            Must be manually added - would normally be added by `passport.authenticate()`
+            but calling `passport.authenticate('github')` manually after the redirect will
+            just start the auth process all over again and lead back to a redirect issue.
+            Therefore, simply manually serialize the user._id to session here so autologin
+            can persist login state on refresh.
+        */
+        req.session.passport = { user: existingUser._id.valueOf() };
+
+        res.status(201).json({
+            _id: existingUser._id,
+            handle: existingUser.handle,
+            profilePicture: existingUser.profilePicture,
+            email: censorUserEmail(existingUser.email),
+            details: existingUser.details,
+            isDemo: false,
+            isGithub: true,
+        });
+    }
+});

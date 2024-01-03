@@ -32,11 +32,11 @@ try {
     - Initialise passport
 */
 const passport = require('passport');
-const { localStrategy } = require('./passport/strategies');
+const { localStrategy, githubStrategy } = require('./passport/strategies');
 const { serialize, deserialize } = require('./passport/serialize');
 
 passport.use(localStrategy);
-// passport.use(githubStrategy);
+passport.use(githubStrategy);
 
 passport.serializeUser(serialize);
 passport.deserializeUser(deserialize);

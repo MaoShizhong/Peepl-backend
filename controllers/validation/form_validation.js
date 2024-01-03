@@ -201,7 +201,7 @@ exports.validateSignupLocal = signupFieldsLocal.map((field) => userFormValidator
 
 exports.validateEditDetails = [
     ...editDetailsFields.map((field) => userFormValidators[field]),
-    userFormValidators.visibility,
+    ...['DOB', 'city', 'country'].map((field) => userFormValidators.visibility(field)),
 ];
 
 exports.validateEditEducation = [

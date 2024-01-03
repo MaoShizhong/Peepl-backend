@@ -24,10 +24,8 @@ exports.deleteComment = asyncHandler(async (req, res) => {
     const deletedComment = await Comment.findByIdAndDelete(commentID).exec();
 
     if (!deletedComment) {
-        console.log('delete not found comment');
         res.status(404).json(notFoundError);
     } else {
-        console.log('delete');
         res.end();
     }
 });

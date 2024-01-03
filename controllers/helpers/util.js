@@ -51,3 +51,15 @@ exports.censorUserEmail = (email) => {
 
     return `${censoredFirstHalf}${secondHalf}`;
 };
+
+exports.getName = ({ name, fallbackName }) => {
+    if (!name) {
+        const halfLength = fallbackName.length / 2;
+        return [fallbackName.slice(0, halfLength), fallbackName.slice(halfLength)];
+    } else if (name.includes(' ')) {
+        return name.split(' ');
+    } else {
+        const halfLength = name.length / 2;
+        return [name.slice(0, halfLength), name.slice(halfLength)];
+    }
+};

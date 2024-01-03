@@ -127,7 +127,7 @@ User.watch().on('change', async ({ operationType, documentKey, updateDescription
 
     // target only friend requests
     const updatedFieldPropertyName = Object.keys(updateDescription.updatedFields)[0];
-    if (!updatedFieldPropertyName.startsWith('friend')) return;
+    if (!updatedFieldPropertyName || !updatedFieldPropertyName.startsWith('friend')) return;
 
     // target only the friend request on the side of the user to send the notification to
     const newFriendEntry = updateDescription.updatedFields[updatedFieldPropertyName];

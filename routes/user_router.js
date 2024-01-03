@@ -40,7 +40,12 @@ userRouter.delete('/:userID', verifySameUser(), sendEmail('accountDeletion'));
 /*
     Account details
 */
-userRouter.put('/:userID', verifySameUser(), validateEditDetails, user.editDetail);
+userRouter.put(
+    '/:userID',
+    verifySameUser(),
+    validateEditDetails,
+    user.editDetail
+);
 userRouter.put('/:userID/education', verifySameUser(), validateEditEducation, user.editEducation);
 userRouter.put(
     '/:userID/employment',
