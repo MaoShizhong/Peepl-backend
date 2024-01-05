@@ -12,29 +12,11 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
     const { search } = req.query;
     const uriDecodedSearchQuery = decodeURIComponent(search ?? '');
 
-    const searchRegex = new RegExp(uriDecodedSearchQuery, 'i');
-
     const [allUsers, friendsList] = await Promise.all([
-        User.aggregate([
-            {
-                $addFields: {
-                    fullName: { $concat: ['$details.firstName', ' ', '$details.lastName'] },
-                },
-            },
-            {
-                $match: {
-                    $and: [{ fullName: { $regex: searchRegex } }, { handle: { $ne: handle } }],
-                },
-            },
-            {
-                $project: {
-                    profilePicture: 1,
-                    'details.firstName': 1,
-                    'details.lastName': 1,
-                    handle: 1,
-                },
-            },
-        ]).exec(),
+        User.find(
+            { $text: { $search: uriDecodedSearchQuery }, handle: { $ne: handle } },
+            'profilePicture details.firstName details.lastName handle'
+        ),
         User.findById(_id, 'friends -_id').exec(),
     ]);
 
