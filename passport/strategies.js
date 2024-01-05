@@ -4,7 +4,7 @@ const User = require('../models/User');
 const argon2 = require('argon2');
 const { generateUsername } = require('unique-username-generator');
 const { cloudinary } = require('../cloudinary/cloudinary');
-const { getName } = require('../controllers/helpers/util');
+const { getName, capitaliseFirstLetter } = require('../controllers/helpers/util');
 
 exports.localStrategy = new LocalStrategy(
     // using `email` form field to sign in instead of username
@@ -97,8 +97,8 @@ exports.githubStrategy = new GithubStrategy(
                         githubID: id,
                     },
                     details: {
-                        firstName: firstName,
-                        lastName: lastName,
+                        firstName: capitaliseFirstLetter(firstName),
+                        lastName: capitaliseFirstLetter(lastName),
                         'DOB.value': new Date('1990-01-01'),
                     },
                 });

@@ -9,7 +9,7 @@ const { ObjectId } = require('mongoose').Types;
 const { generateUsername } = require('unique-username-generator');
 const { cloudinary } = require('../../cloudinary/cloudinary');
 const fs = require('fs');
-const { censorUserEmail } = require('../helpers/util');
+const { censorUserEmail, capitaliseFirstLetter } = require('../helpers/util');
 const { createHash, randomBytes } = require('node:crypto');
 
 exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
@@ -75,8 +75,8 @@ exports.addNewUserLocal = asyncHandler(async (req, res, next) => {
             password: hashedPassword,
         },
         details: {
-            firstName: firstName,
-            lastName: lastName,
+            firstName: capitaliseFirstLetter(firstName),
+            lastName: capitaliseFirstLetter(lastName),
             'DOB.value': DOB,
             'city.value': city ? city : undefined,
             'country.value': country ? country : undefined,

@@ -56,7 +56,6 @@ app.use(
     cors({
         origin: process.env.ALLOWED_ORIGINS.split(','),
         credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     })
 );
 app.use(
@@ -68,7 +67,7 @@ app.use(
         store: MongoStore.create({ client: mongoose.connection.getClient() }),
         cookie: {
             secure: process.env.MODE === 'prod',
-            maxAge: COOKIE_MAX_AGE, // 2 days (refreshed every successful request)
+            maxAge: COOKIE_MAX_AGE, // refreshed every successful request
             httpOnly: process.env.MODE === 'prod',
             sameSite: process.env.MODE === 'prod' ? 'none' : 'lax',
         },

@@ -1,7 +1,11 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
 const { acceptFriendRequest, rejectFriendRequest } = require('../helpers/friend_requests');
-const { sortByEndDescendingThenStartDescending, extractPublicID } = require('../helpers/util');
+const {
+    sortByEndDescendingThenStartDescending,
+    extractPublicID,
+    capitaliseFirstLetter,
+} = require('../helpers/util');
 const { editDetailsFields } = require('../validation/form_validation');
 const { notFoundError } = require('../helpers/error_handling');
 const { validationResult } = require('express-validator');
@@ -61,6 +65,8 @@ exports.editDetail = asyncHandler(async (req, res) => {
     editDetailsFields.forEach((field) => {
         if (field === 'handle') {
             newUserDetails.handle = req.body.handle;
+        } else if (field === 'firstName' || field === 'lastName') {
+            newUserDetails[`details.${field}`] = capitaliseFirstLetter(req.body[field]);
         } else {
             newUserDetails[`details.${field}`] = req.body[field];
         }

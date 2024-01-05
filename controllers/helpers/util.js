@@ -63,3 +63,7 @@ exports.getName = ({ name, fallbackName }) => {
         return [name.slice(0, halfLength), name.slice(halfLength)];
     }
 };
+
+exports.capitaliseFirstLetter = (name) => {
+    return `${name[0].toUpperCase()}${name.slice(1)}`;
+};
