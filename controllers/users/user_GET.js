@@ -199,7 +199,9 @@ exports.getFeed = asyncHandler(async (req, res) => {
     const postsToSkip = ITEMS_PER_PAGE * ((page ?? 1) - 1);
 
     const user = await User.findById(_id).select('friends').exec();
-    const friends = user.friends.map((friend) => friend.user);
+    const friends = user.friends
+        .filter((friend) => friend.status === 'accepted')
+        .map((friend) => friend.user);
 
     const [feedPosts, feedPostsCount] = await Promise.all([
         Post.find({
