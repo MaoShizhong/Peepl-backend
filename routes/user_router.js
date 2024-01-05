@@ -40,12 +40,7 @@ userRouter.delete('/:userID', verifySameUser(), sendEmail('accountDeletion'));
 /*
     Account details
 */
-userRouter.put(
-    '/:userID',
-    verifySameUser(),
-    validateEditDetails,
-    user.editDetail
-);
+userRouter.put('/:userID', verifySameUser(), validateEditDetails, user.editDetail);
 userRouter.put('/:userID/education', verifySameUser(), validateEditEducation, user.editEducation);
 userRouter.put(
     '/:userID/employment',
@@ -66,6 +61,7 @@ userRouter.patch(
     user.changeEmail
 );
 userRouter.patch('/:userID/password', verifySameUser(), sendEmail('passwordReset'));
+userRouter.delete('/:userID/profile-picture', verifySameUser(), user.removeProfilePicture);
 
 /*
     Account gallery

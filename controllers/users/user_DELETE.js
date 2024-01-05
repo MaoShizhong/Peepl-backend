@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const User = require('../../models/User');
 const Photo = require('../../models/Photo');
 const { cloudinary } = require('../../cloudinary/cloudinary');
+const { extractPublicID } = require('../helpers/util');
 
 exports.deletePhoto = asyncHandler(async (req, res) => {
     const { _id } = req.user;
@@ -26,4 +27,16 @@ exports.removeFriend = asyncHandler(async (req, res) => {
     ]);
 
     res.json({ removedFriendID: friendID });
+});
+
+exports.removeProfilePicture = asyncHandler(async (req, res) => {
+    const { _id } = req.user;
+
+    const user = await User.findById(_id).exec();
+    const photoIdToDelete = extractPublicID(user.profilePicture);
+    user.profilePicture = null;
+
+    await Promise.all([user.save(), cloudinary.api.delete_resources([photoIdToDelete])]);
+
+    res.json({ message: 'Profile picture successfully removed.' });
 });
