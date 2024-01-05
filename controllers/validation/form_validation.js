@@ -52,8 +52,8 @@ exports.handleImageFile = (imageFormField) => {
 
 const userFormValidators = {
     handle: body('handle')
-        .isLength({ min: 3, max: 25 })
-        .withMessage('Handle must be between 3-25 characters.')
+        .isLength({ min: 3, max: 45 })
+        .withMessage('Handle must be between 3 - 45 characters.')
         .custom((handle) => !/[^\w-]/.test(handle))
         .withMessage(
             'Handle can only contain letters (either case), numbers, dashes and underscores.'
