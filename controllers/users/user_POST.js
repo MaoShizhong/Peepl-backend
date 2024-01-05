@@ -89,5 +89,5 @@ exports.addPhotoToGallery = asyncHandler(async (req, res) => {
 
     await photo.save();
 
-    res.status(201).json(photo);
+    res.status(201).json({ photo });
 });
