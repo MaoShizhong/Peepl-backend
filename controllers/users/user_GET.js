@@ -3,7 +3,7 @@ const User = require('../../models/User');
 const Post = require('../../models/Post');
 const Photo = require('../../models/Photo');
 const { notFoundError } = require('../helpers/error_handling');
-const { FEED_POSTS_PER_PAGE } = require('../helpers/constants');
+const { ITEMS_PER_PAGE } = require('../helpers/constants');
 const { getFriendStatus } = require('../helpers/friend_requests');
 const Comment = require('../../models/Comment');
 
@@ -109,8 +109,11 @@ exports.getSpecificUser = asyncHandler(async (req, res, next) => {
 
 exports.getRestOfProfile = asyncHandler(async (req, res) => {
     const { _id } = req.profile.user;
+    const { page } = req.query;
 
-    const [user, wallPosts] = await Promise.all([
+    const postsToSkip = ITEMS_PER_PAGE * ((page ?? 1) - 1);
+
+    const [user, wallPosts, wallPostsCount] = await Promise.all([
         User.findById(_id, 'friends -_id')
             .populate({
                 path: 'friends.user',
@@ -119,12 +122,15 @@ exports.getRestOfProfile = asyncHandler(async (req, res) => {
             .sort({ 'friends.user.details.firstName': 1, 'friends.user.details.lastName': 1 })
             .exec(),
         Post.find({ wall: _id })
+            .skip(postsToSkip)
+            .limit(ITEMS_PER_PAGE)
+            .sort({ timestamp: -1 })
             .populate({
                 path: 'author',
                 options: { projection: 'handle details.firstName details.lastName profilePicture' },
             })
-            .sort({ timestamp: -1 })
             .exec(),
+        Post.countDocuments({ wall: _id }).exec(),
     ]);
 
     const wallPostIDs = wallPosts.map((post) => post.id);
@@ -159,8 +165,12 @@ exports.getRestOfProfile = asyncHandler(async (req, res) => {
         };
     });
 
+    const allPreviousPagesPosts = ((page ?? 1) - 1) * ITEMS_PER_PAGE;
+
     req.profile.friends = formattedFriendsList;
     req.profile.wall = wallPostsWithComments;
+    req.profile.hasMorePosts =
+        wallPostsCount > wallPostsWithComments.length + allPreviousPagesPosts;
 
     res.json(req.profile);
 });
@@ -186,22 +196,33 @@ exports.getFeed = asyncHandler(async (req, res) => {
     const { _id } = req.user;
     const { page } = req.query;
 
-    const postsToSkip = FEED_POSTS_PER_PAGE * ((page ?? 1) - 1);
+    const postsToSkip = ITEMS_PER_PAGE * ((page ?? 1) - 1);
 
     const user = await User.findById(_id).select('friends').exec();
     const friends = user.friends.map((friend) => friend.user);
 
-    const feedPosts = await Post.find({
-        $and: [{ author: { $in: [...friends, _id] } }, { $expr: { $eq: ['$author', '$wall'] } }],
-    })
-        .skip(postsToSkip)
-        .limit(FEED_POSTS_PER_PAGE)
-        .sort({ timestamp: -1 })
-        .populate({
-            path: 'author',
-            options: { projection: 'handle details.firstName details.lastName profilePicture' },
+    const [feedPosts, feedPostsCount] = await Promise.all([
+        Post.find({
+            $and: [
+                { author: { $in: [...friends, _id] } },
+                { $expr: { $eq: ['$author', '$wall'] } },
+            ],
         })
-        .exec();
+            .skip(postsToSkip)
+            .limit(ITEMS_PER_PAGE)
+            .sort({ timestamp: -1 })
+            .populate({
+                path: 'author',
+                options: { projection: 'handle details.firstName details.lastName profilePicture' },
+            })
+            .exec(),
+        Post.countDocuments({
+            $and: [
+                { author: { $in: [...friends, _id] } },
+                { $expr: { $eq: ['$author', '$wall'] } },
+            ],
+        }).exec(),
+    ]);
 
     const feedPostIDs = feedPosts.map((post) => post.id);
 
@@ -222,12 +243,20 @@ exports.getFeed = asyncHandler(async (req, res) => {
         };
     });
 
-    res.json({ feed: feedPostsWithComments });
+    const allPreviousPagesPosts = ((page ?? 1) - 1) * ITEMS_PER_PAGE;
+
+    res.json({
+        feed: feedPostsWithComments,
+        hasMorePosts: feedPostsCount > feedPosts.length + allPreviousPagesPosts,
+    });
 });
 
 exports.getGallery = asyncHandler(async (req, res) => {
     const { userID } = req.params;
     const { _id } = req.user;
+    const { page } = req.query;
+
+    const postsToSkip = ITEMS_PER_PAGE * ((page ?? 1) - 1);
 
     const [self, galleryOwner] = await Promise.all([
         User.findById(_id).exec(),
@@ -243,7 +272,19 @@ exports.getGallery = asyncHandler(async (req, res) => {
         });
     }
 
-    const gallery = await Photo.find({ user: userID }).sort({ timestamp: -1 }).exec();
+    const [gallery, photoCount] = await Promise.all([
+        Photo.find({ user: userID })
+            .skip(postsToSkip)
+            .limit(ITEMS_PER_PAGE)
+            .sort({ timestamp: -1 })
+            .exec(),
+        Photo.countDocuments({ user: userID }).exec(),
+    ]);
 
-    res.json({ gallery });
+    const allPreviousPagesPosts = ((page ?? 1) - 1) * ITEMS_PER_PAGE;
+
+    res.json({
+        gallery: gallery,
+        hasMorePhotos: photoCount > gallery.length + allPreviousPagesPosts,
+    });
 });
