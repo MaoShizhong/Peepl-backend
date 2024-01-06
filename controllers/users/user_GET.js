@@ -3,7 +3,7 @@ const User = require('../../models/User');
 const Post = require('../../models/Post');
 const Photo = require('../../models/Photo');
 const { notFoundError } = require('../helpers/error_handling');
-const { ITEMS_PER_PAGE } = require('../helpers/constants');
+const { ITEMS_PER_PAGE, SPECIAL_REGEX_CHARACTERS } = require('../helpers/constants');
 const { getFriendStatus } = require('../helpers/friend_requests');
 const Comment = require('../../models/Comment');
 
@@ -11,12 +11,33 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
     const { _id, handle } = req.user;
     const { search } = req.query;
     const uriDecodedSearchQuery = decodeURIComponent(search ?? '');
+    const escapedQueryStringForRegex = uriDecodedSearchQuery
+        .replaceAll('\\', '')
+        .replaceAll(SPECIAL_REGEX_CHARACTERS, '\\$&');
+
+    const searchRegex = new RegExp(escapedQueryStringForRegex, 'i');
 
     const [allUsers, friendsList] = await Promise.all([
-        User.find(
-            { $text: { $search: uriDecodedSearchQuery }, handle: { $ne: handle } },
-            'profilePicture details.firstName details.lastName handle'
-        ),
+        User.aggregate([
+            {
+                $addFields: {
+                    fullName: { $concat: ['$details.firstName', ' ', '$details.lastName'] },
+                },
+            },
+            {
+                $match: {
+                    $and: [{ fullName: { $regex: searchRegex } }, { handle: { $ne: handle } }],
+                },
+            },
+            {
+                $project: {
+                    profilePicture: 1,
+                    'details.firstName': 1,
+                    'details.lastName': 1,
+                    handle: 1,
+                },
+            },
+        ]).exec(),
         User.findById(_id, 'friends -_id').exec(),
     ]);
 
