@@ -1,3 +1,3 @@
 # Peepl
 
-Front end: [Live](https://peepl.netlify.app/) | [Repo](https://github.com/MaoShizhong/Peepl)
+Front end: [Live](https://peepl.pages.dev/) | [Repo](https://github.com/MaoShizhong/Peepl)
