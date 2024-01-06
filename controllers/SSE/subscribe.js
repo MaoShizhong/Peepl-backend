@@ -18,11 +18,15 @@ exports.subscribeToFriendRequestNotifications = (req, res) => {
     res.writeHead(200, SSE_HEADERS);
 
     const { _id: clientID } = req.user;
-    activeFriendRequestClients.push({ _id: clientID, response: res });
+    const newClient = { _id: clientID, response: res };
+    activeFriendRequestClients.push(newClient);
     console.log(`OPENED friend request connection - client: ${clientID}`);
+
+    const heartBeat = setInterval(() => newClient.response.write(`data: ping\n\n`), 5000);
 
     req.on('close', () => {
         removeClient(activeFriendRequestClients, clientID, 'friend request');
+        clearInterval(heartBeat);
     });
 };
 
@@ -30,11 +34,15 @@ exports.subscribeToFeedUpdates = (req, res) => {
     res.writeHead(200, SSE_HEADERS);
 
     const { _id: clientID } = req.user;
-    activeFeedUpdateClients.push({ _id: clientID, response: res });
+    const newClient = { _id: clientID, response: res };
+    activeFeedUpdateClients.push(newClient);
     console.log(`OPENED feed update connection - client: ${clientID}`);
+
+    const heartBeat = setInterval(() => newClient.response.write(`data: ping\n\n`), 5000);
 
     req.on('close', () => {
         removeClient(activeFeedUpdateClients, clientID, 'feed update');
+        clearInterval(heartBeat);
     });
 };
 
@@ -42,11 +50,15 @@ exports.subscribeToWallPostUpdates = (req, res) => {
     res.writeHead(200, SSE_HEADERS);
 
     const { _id: clientID } = req.user;
-    activeWallPostUpdateClients.push({ _id: clientID, response: res });
+    const newClient = { _id: clientID, response: res };
+    activeWallPostUpdateClients.push(newClient);
     console.log(`OPENED wall update connection - client: ${clientID}`);
+
+    const heartBeat = setInterval(() => newClient.response.write(`data: ping\n\n`), 5000);
 
     req.on('close', () => {
         removeClient(activeWallPostUpdateClients, clientID, 'wall update');
+        clearInterval(heartBeat);
     });
 };
 
