@@ -178,6 +178,7 @@ exports.logout = (req, res) => {
         secure: process.env.MODE === 'prod',
         httpOnly: process.env.MODE === 'prod',
         sameSite: process.env.MODE === 'prod' ? 'none' : 'lax',
+        partitioned: true,
     }).json({ message: 'Log out successful.' });
 };
 

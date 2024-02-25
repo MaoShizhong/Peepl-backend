@@ -70,6 +70,7 @@ app.use(
             maxAge: COOKIE_MAX_AGE, // refreshed every successful request
             httpOnly: process.env.MODE === 'prod',
             sameSite: process.env.MODE === 'prod' ? 'none' : 'lax',
+            partitioned: true,
         },
     })
 );
