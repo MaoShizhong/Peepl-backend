@@ -4,6 +4,7 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const MongoStore = require('connect-mongo');
 const logger = require('morgan');
+const { rateLimit } = require('express-rate-limit');
 
 require('dotenv').config();
 
@@ -52,6 +53,14 @@ app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(
+    rateLimit({
+        windowMs: 8 * 60 * 1000,
+        limit: 100,
+        standardHeaders: true,
+        legacyHeaders: false,
+    })
+);
 app.use(
     cors({
         origin: process.env.ALLOWED_ORIGINS.split(','),
